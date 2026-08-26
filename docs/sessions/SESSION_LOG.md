@@ -9,9 +9,12 @@ Este documento registra cronologicamente todas as sessões de planejamento, arqu
 - **Máquina Local (Host de Desenvolvimento):**
   - Ambiente primário de codificação, compilação de firmware PlatformIO e execução de testes automatizados com `pytest`.
   - Todas as validações unitárias, integração de schemas e simulações E2E de rede devem ser executadas e aprovadas localmente antes de qualquer implantação.
-- **Ambiente de Produção (VPS Externa):**
-  - O endereço IP/domínio da VPS e as credenciais de acesso via SSH serão fornecidos pelo usuário **após a conclusão e validação de todas as milestones** do [`ROADMAP.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/ROADMAP.md).
-  - Nenhum deploy remoto prematuro deve ser executado.
+- **Ambiente de Produção (VPS Alpine Linux - Baixo Recurso):**
+  - VPS de baixa renda / baixo recurso (512MB - 1GB RAM, 1 vCPU) rodando **Alpine Linux** (OpenRC + musl libc).
+  - **Stack Ultra-Otimizada:** Uso mandatório de **SQLite assíncrono com WAL Mode (`aiosqlite`)** embutido, dispensando o overhead de um daemon de PostgreSQL.
+  - Imagem Docker enxuta baseada em `python:3.11-alpine` com consumo de memória total projetado em **< 50MB RAM**.
+  - O endereço IP/domínio da VPS e as credenciais SSH serão fornecidos pelo usuário **após a conclusão e validação de todas as milestones** do [`ROADMAP.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/ROADMAP.md).
+
 
 ---
 

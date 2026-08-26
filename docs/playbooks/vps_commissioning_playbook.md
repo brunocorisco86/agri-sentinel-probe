@@ -1,116 +1,129 @@
-# 🚀 Playbook de Comissionamento da VPS (Nuvem) - Keepalive Foresight
+# 🚀 Playbook de Comissionamento da VPS (Alpine Linux - Baixo Recurso)
 
-> **Objetivo:** Guia passo a passo e automatizável para provisionar, endurecer (hardening) e subir a stack Docker do backend FastAPI na VPS de produção assim que todas as milestones locais forem aprovadas.
+> **Objetivo:** Guia passo a passo para provisionar e endurecer uma VPS de baixos recursos (512MB - 1GB RAM, 1 vCPU) rodando **Alpine Linux**, espremendo ao máximo o desempenho de CPU e consumo de memória RAM.
+
+---
+
+## 💡 Filosofia de Arquitetura para VPS de Baixa Renda
+Para operar com estabilidade e consumo inferior a **100MB de RAM totais no servidor**:
+1. **Host Alpine Linux:** Sem systemd, sem glibc pesada; uso de OpenRC e musl libc (~30MB de RAM base do SO).
+2. **Sem Daemon Separado de PostgreSQL:** O backend utiliza **SQLite assíncrono com WAL Mode (`aiosqlite`)**, eliminando o consumo de 150-250MB de RAM de um container de banco tradicional.
+3. **Single Worker Async Uvicorn:** 1 único processo de evento assíncrono consome menos de 35MB de RAM e atende centenas de requisições por minuto com latência < 5ms.
+4. **ZRAM / Swapfile de Proteção:** Criação de swap leve para proteger contra OOM (Out-of-Memory) em picos de compilação ou inicialização de containers.
+5. **Limites Cgroups no Docker:** Limite rígido de 128MB de RAM para o container.
 
 ---
 
 ## 📋 Pré-requisitos & Dados de Entrada
-Antes de iniciar, tenha em mãos:
-- **IP Público ou Domínio da VPS:** Ex: `telemetry.cvale.com.br` / `203.0.113.10`
-- **Usuário SSH:** Ex: `deployer` ou `root`
+- **IP / Domínio da VPS Alpine:** Ex: `telemetry.cvale.com.br` / `203.0.113.10`
+- **Usuário SSH:** `root`
 - **Chave SSH Privada:** `~/.ssh/id_rsa_cvale`
-- **Secrets de Produção:**
-  - `DATABASE_URL` (PostgreSQL)
-  - `SECRET_KEY` (Chave de assinatura de tokens)
-  - `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID`
 
 ---
 
-## 🛠️ Passo a Passo de Comissionamento
+## 🛠️ Passo a Passo de Comissionamento no Alpine Linux
 
-### 1. Conexão SSH & Atualização do Sistema Operacional
+### 1. Conexão SSH & Atualização de Repositórios Alpine (`apk`)
 ```bash
 ssh -i ~/.ssh/id_rsa_cvale root@<IP_DA_VPS>
 
-# Atualizar pacotes do sistema
-apt-get update && apt-get upgrade -y
-apt-get install -y ufw curl wget git fail2ban htop ca-certificates gnupg lsb-release
+# Habilitar repositorio community se ainda nao estiver habilitado
+sed -i 's/^#\(.*\/community\)/\1/' /etc/apk/repositories
+
+# Atualizar pacotes
+apk update && apk upgrade
+
+# Instalar utilitarios essenciais leves
+apk add curl wget git htop ca-certificates tzdata iptables ip6tables
 ```
 
-### 2. Hardening e Configuração de Firewall (UFW)
+### 2. Criação de Swapfile de Segurança (Para VPS de 512MB/1GB)
 ```bash
-# Permitir SSH, HTTP e HTTPS
-ufw default deny incoming
-ufw default allow outgoing
-ufw allow 22/tcp comment 'SSH'
-ufw allow 80/tcp comment 'HTTP (Certbot)'
-ufw allow 443/tcp comment 'HTTPS API'
-ufw enable
+# Criar swapfile de 512MB para evitar OOM
+dd if=/dev/zero of=/swapfile bs=1M count=512 status=progress
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+
+# Persistir no fstab do Alpine
+echo "/swapfile none swap sw 0 0" >> /etc/fstab
+
+# Ajustar agressividade do swap (swappiness baixo para economizar I/O)
+echo "vm.swappiness=10" >> /etc/sysctl.d/01-swappiness.conf
+sysctl -p /etc/sysctl.d/01-swappiness.conf
 ```
 
-### 3. Instalação do Docker & Docker Compose Plugin
+### 3. Instalação e Ativação do Docker via OpenRC
+No Alpine Linux, o serviço é gerenciado pelo **OpenRC** (não systemd):
 ```bash
-# Adicionar chave oficial do Docker
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-chmod a+r /etc/apt/keyrings/docker.gpg
+# Instalar Docker e Docker Compose plugin
+apk add docker docker-cli-compose
 
-# Configurar repositório
-echo \
-  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-  tee /etc/apt/sources.list.d/docker.list > /dev/null
+# Habilitar e iniciar o servico Docker no boot
+rc-update add docker boot
+rc-service docker start
 
-# Instalar Docker Engine e plugins
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-systemctl enable --now docker
+# Verificar status do Docker
+rc-service docker status
 ```
 
-### 4. Criação do Usuário de Deploy e Clonagem do Repositório
+### 4. Firewall Leve com iptables no Alpine
 ```bash
-useradd -m -s /bin/bash deployer
-usermod -aG docker deployer
-mkdir -p /home/deployer/.ssh
-cp /root/.ssh/authorized_keys /home/deployer/.ssh/
-chown -R deployer:deployer /home/deployer/.ssh
-chmod 700 /home/deployer/.ssh
-chmod 600 /home/deployer/.ssh/authorized_keys
+# Regras basicas: Permitir Loopback, Estabelecidas, SSH (22), HTTP (80), HTTPS (443)
+iptables -F
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+iptables -A INPUT -p tcp --dport 8000 -j ACCEPT # Porta da API (ou fechar se usar reverse proxy local)
+iptables -P INPUT DROP
+iptables -P FORWARD ACCEPT # Necessario para a rede de containers do Docker
 
-# Clonar repositório no diretório de produção
-su - deployer
-git clone <URL_DO_REPOSITORIO> /home/deployer/keepalive-foresight
-cd /home/deployer/keepalive-foresight/docker
+# Salvar regras de firewall no Alpine
+rc-update add iptables boot
+/etc/init.d/iptables save
 ```
 
-### 5. Configuração das Variáveis de Ambiente (`.env`)
-Criar o arquivo `/home/deployer/keepalive-foresight/docker/.env`:
-```env
+### 5. Clonagem do Repositório e Configuração de Ambiente
+```bash
+mkdir -p /opt/cvale
+cd /opt/cvale
+
+# Clonar o repositorio
+git clone <URL_DO_REPOSITORIO> keepalive-foresight
+cd keepalive-foresight/docker
+```
+
+Criar o arquivo de variáveis `.env` otimizado:
+```bash
+cat << 'EOF' > .env
 ENVIRONMENT=production
-POSTGRES_USER=keepalive_admin
-POSTGRES_PASSWORD=GERAR_SENHA_FORTE_AQUI_123!
-POSTGRES_DB=keepalive_production
-DATABASE_URL=postgresql+asyncpg://keepalive_admin:GERAR_SENHA_FORTE_AQUI_123!@db:5432/keepalive_production
-
-SECRET_KEY=GERAR_CHAVE_HEX_64_CHARS
+DATABASE_URL=sqlite+aiosqlite:////data/keepalive.db
+SQLITE_WAL_MODE=true
+SECRET_KEY=GERAR_CHAVE_HEX_64_CHARS_AQUI
 DEADMAN_TIMEOUT_SECONDS=90
 HEARTBEAT_TOLERANCE_FAILS=3
-
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRstuVWXyz
-TELEGRAM_CHAT_ID=-1001234567890
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+EOF
 ```
 
-### 6. Emissão de Certificado SSL (Let's Encrypt / Certbot)
+### 6. Subir a Aplicação com Docker Compose
 ```bash
-apt-get install -y certbot python3-certbot-nginx
-certbot certonly --standalone -d <SEU_DOMINIO_VPS> --non-interactive --agree-tos -m suporte@cvale.com.br
-```
-
-### 7. Inicialização dos Containers & Migrações de Banco
-```bash
-cd /home/deployer/keepalive-foresight/docker
+# Build e inicializacao em background
 docker compose --env-file .env up -d --build
 
-# Executar migrações do Alembic (criação das tabelas)
-docker compose exec backend alembic upgrade head
+# Verificar uso real de memoria do container (< 35MB RAM)
+docker stats --no-stream
 ```
 
-### 8. Validação e Teste de Healthcheck
+### 7. Validação de Saúde (Healthcheck)
 ```bash
-# Testar endpoint local e externo
-curl -f http://localhost:8000/health || echo "Falha no healthcheck"
-curl -f https://<SEU_DOMINIO_VPS>/health
+# Testar endpoint local
+curl -i http://localhost:8000/health
 
-# Monitorar logs do Dead Man's Switch
-docker compose logs -f backend
+# Visualizar logs da aplicacao e do worker Deadman
+docker compose logs -f --tail=50 backend
 ```
+

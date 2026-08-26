@@ -10,26 +10,25 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/keepalive_db
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite+aiosqlite:////data/keepalive.db
+      - SQLITE_WAL_MODE=true
       - SECRET_KEY=cvale_keepalive_secret_change_me
       - DEADMAN_TIMEOUT_SECONDS=90
+      - HEARTBEAT_TOLERANCE_FAILS=3
       - TELEGRAM_BOT_TOKEN=
       - TELEGRAM_CHAT_ID=
-    depends_on:
-      - db
-
-  db:
-    image: postgres:16-alpine
-    container_name: keepalive_postgres
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=keepalive_db
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - sqlite_data:/data
+    # Restricao estrita de recursos para VPS de baixo custo (512MB/1GB RAM)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 128M
+        reservations:
+          memory: 32M
 
 volumes:
-  postgres_data:
+  sqlite_data:
+

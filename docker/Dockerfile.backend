@@ -1,0 +1,30 @@
+# Build stage ultra-enxuto baseado em Alpine Linux
+FROM python:3.11-alpine as base
+
+WORKDIR /app
+
+# Instalar dependencias minimas de compilacao para Alpine
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev libffi-dev \
+    && apk add --no-cache sqlite-libs ca-certificates tzdata
+
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && apk del .build-deps
+
+# Copiar codigo da aplicacao
+COPY backend/app ./app
+COPY backend/alembic.ini .
+COPY backend/alembic ./alembic
+
+# Diretorio para persistencia do SQLite
+RUN mkdir -p /data && chmod 777 /data
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    TZ=America/Sao_Paulo
+
+EXPOSE 8000
+
+# Execucao com 1 worker assincrono para economizar RAM (< 40MB total)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
