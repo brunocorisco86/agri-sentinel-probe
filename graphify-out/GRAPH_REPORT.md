@@ -6,7 +6,7 @@
 ## Summary
 - 12 nodes · 14 edges · 3 communities (2 shown, 1 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
-- Token cost: 1,200 input · 850 output
+- Token cost: 1,500 input · 950 output
 
 ## Community Hubs (Navigation)
 - Documentação & SSOT
