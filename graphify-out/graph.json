@@ -1,0 +1,243 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "id": "backend",
+      "label": "FastAPI Cloud Backend",
+      "community": 0,
+      "file_type": "concept",
+      "norm_label": "fastapi cloud backend",
+      "source_file": "backend/requirements.txt",
+      "source_location": "backend/requirements.txt:1",
+      "type": "module"
+    },
+    {
+      "id": "database",
+      "label": "PostgreSQL / SQLite Storage",
+      "community": 0,
+      "file_type": "concept",
+      "norm_label": "postgresql / sqlite storage",
+      "source_file": "docker/docker-compose.yml",
+      "source_location": "docker/docker-compose.yml:18",
+      "type": "database"
+    },
+    {
+      "id": "deadman_switch",
+      "label": "Dead Man's Switch Engine",
+      "community": 0,
+      "file_type": "concept",
+      "norm_label": "dead man's switch engine",
+      "source_file": "backend/requirements.txt",
+      "source_location": "backend/requirements.txt:5",
+      "type": "service"
+    },
+    {
+      "id": "docker",
+      "label": "Docker Compose Stack",
+      "community": 0,
+      "file_type": "concept",
+      "norm_label": "docker compose stack",
+      "source_file": "docker/docker-compose.yml",
+      "source_location": "docker/docker-compose.yml:1",
+      "type": "infrastructure"
+    },
+    {
+      "id": "telegram_notifier",
+      "label": "Telegram Bot Alerter",
+      "community": 0,
+      "file_type": "concept",
+      "norm_label": "telegram bot alerter",
+      "source_file": "backend/requirements.txt",
+      "source_location": "backend/requirements.txt:7",
+      "type": "service"
+    },
+    {
+      "id": "display_hud",
+      "label": "TFT_eSprite HUD Display",
+      "community": 1,
+      "file_type": "concept",
+      "norm_label": "tft_esprite hud display",
+      "source_file": "firmware/platformio.ini",
+      "source_location": "firmware/platformio.ini:12",
+      "type": "component"
+    },
+    {
+      "id": "dragino_gateway",
+      "label": "Dragino LoRaWAN Gateway (Target)",
+      "community": 1,
+      "file_type": "concept",
+      "norm_label": "dragino lorawan gateway (target)",
+      "source_file": "idea.md",
+      "source_location": "idea.md:40",
+      "type": "hardware"
+    },
+    {
+      "id": "firmware",
+      "label": "ESP32 Sentinel Firmware",
+      "community": 1,
+      "file_type": "concept",
+      "norm_label": "esp32 sentinel firmware",
+      "source_file": "firmware/platformio.ini",
+      "source_location": "firmware/platformio.ini:1",
+      "type": "module"
+    },
+    {
+      "id": "network_probe",
+      "label": "ARP & TCP Probe Engine",
+      "community": 1,
+      "file_type": "concept",
+      "norm_label": "arp & tcp probe engine",
+      "source_file": "firmware/platformio.ini",
+      "source_location": "firmware/platformio.ini:15",
+      "type": "component"
+    },
+    {
+      "id": "wifi_provisioning",
+      "label": "SoftAP & Captive Portal Web Server",
+      "community": 1,
+      "file_type": "concept",
+      "norm_label": "softap & captive portal web server",
+      "source_file": "firmware/platformio.ini",
+      "source_location": "firmware/platformio.ini:38",
+      "type": "component"
+    },
+    {
+      "id": "README.md",
+      "label": "Project Overview",
+      "community": 2,
+      "file_type": "concept",
+      "norm_label": "project overview",
+      "source_file": "README.md",
+      "source_location": "README.md:1",
+      "type": "document"
+    },
+    {
+      "id": "idea.md",
+      "label": "Architecture SSOT (idea.md)",
+      "community": 2,
+      "file_type": "concept",
+      "norm_label": "architecture ssot (idea.md)",
+      "source_file": "idea.md",
+      "source_location": "idea.md:1",
+      "type": "document"
+    }
+  ],
+  "links": [
+    {
+      "source": "docker",
+      "target": "backend",
+      "relation": "containerizes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docker/docker-compose.yml"
+    },
+    {
+      "source": "firmware",
+      "target": "display_hud",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "firmware/platformio.ini"
+    },
+    {
+      "source": "firmware",
+      "target": "network_probe",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "firmware/platformio.ini"
+    },
+    {
+      "source": "firmware",
+      "target": "wifi_provisioning",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "firmware/platformio.ini"
+    },
+    {
+      "source": "backend",
+      "target": "telegram_notifier",
+      "relation": "dispatches_alerts",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/requirements.txt"
+    },
+    {
+      "source": "backend",
+      "target": "database",
+      "relation": "persists_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docker/docker-compose.yml"
+    },
+    {
+      "source": "network_probe",
+      "target": "dragino_gateway",
+      "relation": "probes_lan",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "idea.md"
+    },
+    {
+      "source": "docker",
+      "target": "database",
+      "relation": "provisions",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docker/docker-compose.yml"
+    },
+    {
+      "source": "README.md",
+      "target": "idea.md",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md"
+    },
+    {
+      "source": "backend",
+      "target": "deadman_switch",
+      "relation": "runs_worker",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "backend/requirements.txt"
+    },
+    {
+      "source": "firmware",
+      "target": "backend",
+      "relation": "sends_telemetry",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "idea.md"
+    },
+    {
+      "source": "idea.md",
+      "target": "backend",
+      "relation": "specifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "idea.md"
+    },
+    {
+      "source": "idea.md",
+      "target": "docker",
+      "relation": "specifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "idea.md"
+    },
+    {
+      "source": "idea.md",
+      "target": "firmware",
+      "relation": "specifies",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "idea.md"
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "270aa105a3e60797ca6270a254a810431def2776"
+}

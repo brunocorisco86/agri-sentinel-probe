@@ -1,0 +1,191 @@
+{
+  "nodes": [
+    {
+      "id": "idea.md",
+      "label": "Architecture SSOT (idea.md)",
+      "type": "document",
+      "source_file": "idea.md",
+      "source_location": "idea.md:1"
+    },
+    {
+      "id": "README.md",
+      "label": "Project Overview",
+      "type": "document",
+      "source_file": "README.md",
+      "source_location": "README.md:1"
+    },
+    {
+      "id": "firmware",
+      "label": "ESP32 Sentinel Firmware",
+      "type": "module",
+      "source_file": "firmware/platformio.ini",
+      "source_location": "firmware/platformio.ini:1"
+    },
+    {
+      "id": "display_hud",
+      "label": "TFT_eSprite HUD Display",
+      "type": "component",
+      "source_file": "firmware/platformio.ini",
+      "source_location": "firmware/platformio.ini:12"
+    },
+    {
+      "id": "network_probe",
+      "label": "ARP & TCP Probe Engine",
+      "type": "component",
+      "source_file": "firmware/platformio.ini",
+      "source_location": "firmware/platformio.ini:15"
+    },
+    {
+      "id": "wifi_provisioning",
+      "label": "SoftAP & Captive Portal Web Server",
+      "type": "component",
+      "source_file": "firmware/platformio.ini",
+      "source_location": "firmware/platformio.ini:38"
+    },
+    {
+      "id": "backend",
+      "label": "FastAPI Cloud Backend",
+      "type": "module",
+      "source_file": "backend/requirements.txt",
+      "source_location": "backend/requirements.txt:1"
+    },
+    {
+      "id": "deadman_switch",
+      "label": "Dead Man's Switch Engine",
+      "type": "service",
+      "source_file": "backend/requirements.txt",
+      "source_location": "backend/requirements.txt:5"
+    },
+    {
+      "id": "telegram_notifier",
+      "label": "Telegram Bot Alerter",
+      "type": "service",
+      "source_file": "backend/requirements.txt",
+      "source_location": "backend/requirements.txt:7"
+    },
+    {
+      "id": "docker",
+      "label": "Docker Compose Stack",
+      "type": "infrastructure",
+      "source_file": "docker/docker-compose.yml",
+      "source_location": "docker/docker-compose.yml:1"
+    },
+    {
+      "id": "dragino_gateway",
+      "label": "Dragino LoRaWAN Gateway (Target)",
+      "type": "hardware",
+      "source_file": "idea.md",
+      "source_location": "idea.md:40"
+    },
+    {
+      "id": "database",
+      "label": "PostgreSQL / SQLite Storage",
+      "type": "database",
+      "source_file": "docker/docker-compose.yml",
+      "source_location": "docker/docker-compose.yml:18"
+    }
+  ],
+  "edges": [
+    {
+      "source": "idea.md",
+      "target": "firmware",
+      "relation": "specifies",
+      "confidence": "EXTRACTED",
+      "source_file": "idea.md"
+    },
+    {
+      "source": "idea.md",
+      "target": "backend",
+      "relation": "specifies",
+      "confidence": "EXTRACTED",
+      "source_file": "idea.md"
+    },
+    {
+      "source": "idea.md",
+      "target": "docker",
+      "relation": "specifies",
+      "confidence": "EXTRACTED",
+      "source_file": "idea.md"
+    },
+    {
+      "source": "README.md",
+      "target": "idea.md",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md"
+    },
+    {
+      "source": "firmware",
+      "target": "display_hud",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "firmware/platformio.ini"
+    },
+    {
+      "source": "firmware",
+      "target": "network_probe",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "firmware/platformio.ini"
+    },
+    {
+      "source": "firmware",
+      "target": "wifi_provisioning",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "firmware/platformio.ini"
+    },
+    {
+      "source": "network_probe",
+      "target": "dragino_gateway",
+      "relation": "probes_lan",
+      "confidence": "EXTRACTED",
+      "source_file": "idea.md"
+    },
+    {
+      "source": "firmware",
+      "target": "backend",
+      "relation": "sends_telemetry",
+      "confidence": "EXTRACTED",
+      "source_file": "idea.md"
+    },
+    {
+      "source": "backend",
+      "target": "deadman_switch",
+      "relation": "runs_worker",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/requirements.txt"
+    },
+    {
+      "source": "backend",
+      "target": "telegram_notifier",
+      "relation": "dispatches_alerts",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/requirements.txt"
+    },
+    {
+      "source": "backend",
+      "target": "database",
+      "relation": "persists_to",
+      "confidence": "EXTRACTED",
+      "source_file": "docker/docker-compose.yml"
+    },
+    {
+      "source": "docker",
+      "target": "backend",
+      "relation": "containerizes",
+      "confidence": "EXTRACTED",
+      "source_file": "docker/docker-compose.yml"
+    },
+    {
+      "source": "docker",
+      "target": "database",
+      "relation": "provisions",
+      "confidence": "EXTRACTED",
+      "source_file": "docker/docker-compose.yml"
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 1200,
+  "output_tokens": 850
+}
