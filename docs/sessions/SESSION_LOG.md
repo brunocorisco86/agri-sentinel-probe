@@ -38,7 +38,9 @@ Este documento registra cronologicamente todas as sessões de planejamento, arqu
 
 ### 📁 Artefatos Criados & Modificados
 - [`idea.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/idea.md): Documento de arquitetura detalhado.
-- [`ROADMAP.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/ROADMAP.md): Planejamento detalhado em 4 fases de execução.
+- [`ROADMAP.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/ROADMAP.md): Planejamento detalhado em 4 fases de execução com marcos de comissionamento e flash.
+- [`docs/playbooks/vps_commissioning_playbook.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/docs/playbooks/vps_commissioning_playbook.md): Playbook de setup e hardening de produção da VPS.
+- [`docs/playbooks/firmware_flash_playbook.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/docs/playbooks/firmware_flash_playbook.md): Playbook de compilação, flash e validação de boot do LilyGO T-Display ESP32.
 - [`firmware/platformio.ini`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/platformio.ini): Build flags para TTGO T-Display com TFT_eSPI.
 - [`backend/requirements.txt`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/backend/requirements.txt): Dependências FastAPI, SQLAlchemy, Pydantic, HTTPX.
 - [`docker/docker-compose.yml`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/docker/docker-compose.yml): Stack FastAPI + PostgreSQL.
@@ -46,3 +48,4 @@ Este documento registra cronologicamente todas as sessões de planejamento, arqu
 
 ### 🔄 Próximos Passos (Standby)
 Aguardando sinalização do usuário para início da **Fase 1** (Firmware ESP32, Captive Portal e Display HUD) ou **Fase 2** (Backend FastAPI e testes unitários com pytest no ambiente local).
+
