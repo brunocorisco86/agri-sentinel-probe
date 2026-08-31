@@ -19,6 +19,7 @@ bool StorageManager::loadConfig(AppConfig &config) {
     String pass = _prefs.getString("pass", "");
     String loc = _prefs.getString("location", "Ponto Nao Identificado");
     String lan_ip = _prefs.getString("lan_ip", "");
+    String lan_mac = _prefs.getString("lan_mac", "");
     uint16_t lan_port = _prefs.getUShort("lan_port", 80);
     String cloud = _prefs.getString("cloud_url", "http://179.197.73.80:8016/api/v1/telemetry");
     String token = _prefs.getString("api_token", "keepalive-secret-token-123");
@@ -30,6 +31,7 @@ bool StorageManager::loadConfig(AppConfig &config) {
     strncpy(config.wifi_pass, pass.c_str(), sizeof(config.wifi_pass) - 1);
     strncpy(config.location_name, loc.c_str(), sizeof(config.location_name) - 1);
     strncpy(config.target_lan_ip, lan_ip.c_str(), sizeof(config.target_lan_ip) - 1);
+    strncpy(config.target_lan_mac, lan_mac.c_str(), sizeof(config.target_lan_mac) - 1);
     config.target_lan_port = lan_port;
     strncpy(config.cloud_url, cloud.c_str(), sizeof(config.cloud_url) - 1);
     strncpy(config.api_token, token.c_str(), sizeof(config.api_token) - 1);
@@ -48,6 +50,7 @@ bool StorageManager::saveConfig(const AppConfig &config) {
     _prefs.putString("pass", config.wifi_pass);
     _prefs.putString("location", config.location_name);
     _prefs.putString("lan_ip", config.target_lan_ip);
+    _prefs.putString("lan_mac", config.target_lan_mac);
     _prefs.putUShort("lan_port", config.target_lan_port);
     _prefs.putString("cloud_url", config.cloud_url);
     _prefs.putString("api_token", config.api_token);

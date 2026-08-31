@@ -232,12 +232,26 @@ void loop() {
         if (millis() - lastTelemetryMillis >= intervalMs) {
             lastTelemetryMillis = millis();
             
-            // 1. Probe LAN (Alvo Local)
-            if (strlen(appConfig.target_lan_ip) > 0 && strcmp(appConfig.target_lan_ip, "0.0.0.0") != 0) {
+            // 1. Probe LAN (Alvo Local com Suporte a Auto-Discovery por MAC)
+            if ((strlen(appConfig.target_lan_ip) > 0 && strcmp(appConfig.target_lan_ip, "0.0.0.0") != 0) || strlen(appConfig.target_lan_mac) >= 11) {
                 probeMetrics.local_target_enabled = true;
                 float rtt = 0;
                 String mac = "";
-                bool online = networkProbe.probeTarget(appConfig.target_lan_ip, appConfig.target_lan_port, rtt, mac);
+                bool online = false;
+                
+                if (strlen(appConfig.target_lan_ip) > 0 && strcmp(appConfig.target_lan_ip, "0.0.0.0") != 0) {
+                    online = networkProbe.probeTarget(appConfig.target_lan_ip, appConfig.target_lan_port, rtt, mac);
+                }
+                
+                // Se o IP falhou mas o MAC foi informado, executa Auto-Discovery dinâmico na rede
+                if (!online && strlen(appConfig.target_lan_mac) >= 11) {
+                    String discoveredIP = networkProbe.discoverIPByMAC(appConfig.target_lan_mac);
+                    if (discoveredIP.length() > 0) {
+                        strncpy(appConfig.target_lan_ip, discoveredIP.c_str(), sizeof(appConfig.target_lan_ip) - 1);
+                        storage.saveConfig(appConfig); // Persiste novo IP descoberto
+                        online = networkProbe.probeTarget(appConfig.target_lan_ip, appConfig.target_lan_port, rtt, mac);
+                    }
+                }
                 
                 probeMetrics.local_target_online = online;
                 probeMetrics.local_target_rtt_ms = rtt;

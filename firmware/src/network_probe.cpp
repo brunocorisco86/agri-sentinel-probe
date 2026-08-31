@@ -56,6 +56,63 @@ String NetworkProbe::queryArpTable(const IPAddress &targetIP) {
     return "";
 }
 
+String NetworkProbe::discoverIPByMAC(const char *targetMAC) {
+    if (targetMAC == nullptr || strlen(targetMAC) < 11) return "";
+    
+    // Formata MAC alvo para maiúsculas e remove separadores
+    String target = String(targetMAC);
+    target.toUpperCase();
+    target.replace("-", ":");
+    target.trim();
+    
+    IPAddress localIP = WiFi.localIP();
+    IPAddress subnet = WiFi.subnetMask();
+    
+    IPAddress baseIP = IPAddress(localIP[0], localIP[1], localIP[2], 1);
+    
+    struct netif *nif = netif_default;
+    if (!nif) return "";
+    
+    Serial.printf("[AUTO-DISCOVERY] Escaneando subnet para encontrar MAC: %s ...\n", target.c_str());
+    
+    // Dispara rajada ARP para toda a subnet /24
+    for (int i = 1; i <= 254; i++) {
+        IPAddress candidate(baseIP[0], baseIP[1], baseIP[2], i);
+        ip4_addr_t ip;
+        ip.addr = static_cast<uint32_t>(candidate);
+        etharp_request(nif, &ip);
+    }
+    
+    delay(150); // Aguarda respostas ARP chegarem
+    
+    // Inspeciona tabela ARP
+    for (int i = 1; i <= 254; i++) {
+        IPAddress candidate(baseIP[0], baseIP[1], baseIP[2], i);
+        ip4_addr_t ip;
+        ip.addr = static_cast<uint32_t>(candidate);
+        
+        struct eth_addr *eth_ret = nullptr;
+        const ip4_addr_t *ip_ret = nullptr;
+        ssize_t idx = etharp_find_addr(nif, &ip, &eth_ret, &ip_ret);
+        
+        if (idx >= 0 && eth_ret != nullptr) {
+            char macBuf[20];
+            snprintf(macBuf, sizeof(macBuf), "%02X:%02X:%02X:%02X:%02X:%02X",
+                     eth_ret->addr[0], eth_ret->addr[1], eth_ret->addr[2],
+                     eth_ret->addr[3], eth_ret->addr[4], eth_ret->addr[5]);
+            String currentMAC = String(macBuf);
+            if (currentMAC.equalsIgnoreCase(target)) {
+                Serial.printf("[AUTO-DISCOVERY] SUCESSO! MAC %s encontrado no IP: %s\n",
+                              target.c_str(), candidate.toString().c_str());
+                return candidate.toString();
+            }
+        }
+    }
+    
+    Serial.println("[AUTO-DISCOVERY] MAC nao encontrado na varredura da rede.");
+    return "";
+}
+
 bool NetworkProbe::probeTarget(const char *targetIP, uint16_t targetPort, float &rttMs, String &macStr) {
     if (targetIP == nullptr || strlen(targetIP) == 0 || strcmp(targetIP, "0.0.0.0") == 0) {
         rttMs = 0.0f;

@@ -46,6 +46,7 @@ struct AppConfig {
     char wifi_pass[64];
     char location_name[64];      // Nome amigável do ponto (Ex: 'Casa Bruno', 'Granja Aviario 01')
     char target_lan_ip[32];      // IP do alvo local (Ex: '192.168.1.50' ou vazio para WAN-only)
+    char target_lan_mac[24];     // MAC Address para Auto-Discovery DHCP (Ex: 'A8:40:41:xx:xx:xx')
     uint16_t target_lan_port;    // Porta TCP (Ex: 80)
     char cloud_url[128];         // URL do Backend FastAPI (Ex: 'http://vps-ip:8000/api/v1/telemetry')
     char api_token[128];         // Token de autenticação Bearer
