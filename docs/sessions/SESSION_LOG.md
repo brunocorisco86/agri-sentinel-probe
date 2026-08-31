@@ -118,3 +118,26 @@ Este documento registra cronologicamente todas as sessões de planejamento, arqu
 ### 📊 Resultados Alcançados
 - **Fase 1 (Edge Firmware & Provisionamento):** 100% Concluída e homologada no hardware real.
 - **Fase 2 (Backend Cloud & Dead Man's Switch):** 100% Concluída e testada.
+
+
+---
+
+## 🗓️ Sessão 03 — 31/08/2026 (Fase 3 & Fase 4: Notificações Telegram, Auto-Recovery, Deploy VPS Hostinger & NTP)
+
+### 🎯 Objetivos da Sessão
+1. Implementar e sincronizar relógio **NTP (UTC-3 Brasília)** no firmware LilyGO T-Display-S3 com exibição limpa na barra superior.
+2. Implementar gatilho de **enlace imediato no boot**, eliminando o tempo de espera no primeiro batimento.
+3. Desenvolver o serviço assíncrono de mensageria **Telegram Bot** (`send_telegram_alert`) com layout em HTML e emojis ricos.
+4. Integrar o Bot com as credenciais já existentes do projeto `@ForesightAnai_bot`.
+5. Implementar **Histerese Anti-Flapping** e **Auto-Recovery** no fechamento automático de incidentes e envio de notificação verde de restabelecimento.
+6. Criar o simulador interativo multi-sondas E2E (`simulate_probes.py`) com injeção de falhas controladas.
+7. Realizar o **Deploy em Produção na VPS Hostinger** via Docker Compose no endpoint `http://179.197.73.80:8016` com SQLite WAL persistente.
+8. Validar telemetria ponta-a-ponta entre a sonda real LilyGO T-Display-S3 e o servidor na nuvem.
+
+### 🛠️ Decisões Técnicas Consolidadas
+- **Telegram Bot Integrado:** Disparos imediatos em background com `httpx.AsyncClient` para eventos de queda WAN, falha de Dragino e recuperação de sinal.
+- **Produção na Nuvem:** API operando isolada em container Docker na porta pública `8016`, com monitoramento contínuo em `http://179.197.73.80:8016/docs` e `/api/v1/devices/summary`.
+- **E2E Homologado:** Sonda real conectada e enviando batimentos para o IP público da VPS com latência baixa e estabilidade absoluta.
+
+### 🏁 Status do Projeto ao Final da Sessão 03
+- **Status:** **Fases 1, 2, 3 e 4 100% Concluídas e Homologadas em Produção!**

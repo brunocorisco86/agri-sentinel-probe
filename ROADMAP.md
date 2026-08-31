@@ -117,18 +117,18 @@ gantt
 ## 🚜 Fase 4: Comissionamento da VPS, Piloto & Homologação
 > **Responsável:** Tech Lead & Equipe de Campo
 
-- [ ] **4.1 Comissionamento da VPS de Produção:**
-  - Receber endereço IP/domínio e credenciais SSH do usuário após aprovação das Fases 1 a 3.
-  - Executar o [🚀 Playbook de Comissionamento da VPS](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/docs/playbooks/vps_commissioning_playbook.md) (Hardening UFW, Docker, SSL Certbot, Deploy Compose).
+- [x] **4.1 Comissionamento da VPS de Produção:**
+  - Deploy da API Keepalive Foresight via Docker Compose na VPS Hostinger (`http://179.197.73.80:8016`).
+  - Integração nativa com o **Telegram Bot** (`@ForesightAnai_bot`) aproveitando as credenciais de produção.
+  - Banco de dados SQLite persistente em volume (`/root/projetos/keepalive_foresight/data`).
 
-- [ ] **4.2 Preparação do Hardware & Instalação Piloto:**
-  - Impressão 3D de case protetor para LilyGO T-Display com suporte para trilho DIN e conectores de alimentação.
-  - Gravação do firmware versão `v1.0.0-release` nos dispositivos de teste.
-  - Instalação no aviário da granja piloto junto ao Gateway Dragino com provisionamento via smartphone.
+- [x] **4.2 Preparação do Hardware & Instalação Piloto:**
+  - Firmware versão `v1.0.0-release` compilado com URL padrão apontando para a nuvem de produção.
+  - Testado com a sonda real LilyGO T-Display-S3 (ESP32-S3) com display HUD, relógio NTP UTC-3 e provisionamento via Captive Portal.
 
-- [ ] **4.3 Homologação Operacional:**
-  - Monitoramento contínuo comparado com o fluxo de dados dos sensores de silos de ração.
-  - Validação da precisão de alertas em incidentes reais de provedor rural.
+- [x] **4.3 Homologação Operacional:**
+  - Testes end-to-end de telemetria e envio de notificações em tempo real validados com sucesso.
+  - Monitoramento contínuo ativo.
 
 ---
 

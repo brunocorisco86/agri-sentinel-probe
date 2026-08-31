@@ -20,8 +20,8 @@ bool StorageManager::loadConfig(AppConfig &config) {
     String loc = _prefs.getString("location", "Ponto Nao Identificado");
     String lan_ip = _prefs.getString("lan_ip", "");
     uint16_t lan_port = _prefs.getUShort("lan_port", 80);
-    String cloud = _prefs.getString("cloud_url", "http://192.168.1.100:8000/api/v1/telemetry");
-    String token = _prefs.getString("api_token", "keepalive-default-token");
+    String cloud = _prefs.getString("cloud_url", "http://179.197.73.80:8016/api/v1/telemetry");
+    String token = _prefs.getString("api_token", "keepalive-secret-token-123");
     uint16_t interval = _prefs.getUShort("interval", 10);
     
     _prefs.end();
