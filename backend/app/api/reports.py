@@ -1,5 +1,6 @@
 import io
 import datetime
+from typing import Optional, List
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,16 +17,23 @@ router = APIRouter(prefix="/reports", tags=["Relatórios"])
 @router.get("/pdf")
 async def get_executive_pdf_report(
     days: int = Query(7, description="Período em dias para o relatório (Ex: 7 ou 30)"),
+    device_ids: Optional[str] = Query(None, description="IDs dos dispositivos separados por vírgula (Ex: SENTINEL-6E38,SENTINEL-A1B2)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Gera e exporta relatório executivo em formato PDF para os últimos 7 ou 30 dias (1 sonda por página com série temporal e IA).
+    Gera e exporta relatório executivo em formato PDF para os últimos 7 ou 30 dias.
+    Suporta seleção de 1 ou múltiplos pontos (1 sonda por página com série temporal e diagnóstico).
     """
     now = datetime.datetime.utcnow()
     since_date = now - datetime.timedelta(days=days)
     
-    # 1. Busca dispositivos
+    # 1. Busca dispositivos (filtrados se especificado)
     dev_query = select(Device)
+    if device_ids:
+        target_ids = [d.strip() for d in device_ids.split(",") if d.strip()]
+        if target_ids:
+            dev_query = dev_query.where(Device.device_id.in_(target_ids))
+            
     dev_res = await db.execute(dev_query)
     devices = dev_res.scalars().all()
     
@@ -70,7 +78,7 @@ async def get_executive_pdf_report(
         
     pdf_buffer = await generate_executive_pdf_report(devices_data, days=days)
     
-    filename = f"keepalive_relatorio_executivo_{days}d.pdf"
+    filename = f"keepalive_relatorio_{days}d.pdf"
     return StreamingResponse(
         pdf_buffer,
         media_type="application/pdf",

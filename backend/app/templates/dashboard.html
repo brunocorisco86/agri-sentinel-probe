@@ -66,13 +66,12 @@
                     <span class="text-slate-300 font-mono" id="last-sync-time">Sincronizando...</span>
                 </div>
                 
-                <!-- Botões de Relatório Executivo PDF -->
-                <a href="/api/v1/reports/pdf?days=7" target="_blank" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition text-slate-100 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm">
+                <button onclick="generateSelectedPDF(7)" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition text-slate-100 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm" title="Gera relatório PDF para os pontos selecionados nos checkboxes ou todos">
                     <span>📄 PDF (7 Dias)</span>
-                </a>
-                <a href="/api/v1/reports/pdf?days=30" target="_blank" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 transition text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/20">
+                </button>
+                <button onclick="generateSelectedPDF(30)" class="flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-500 transition text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/20" title="Gera relatório PDF de 30 dias para os pontos selecionados ou todos">
                     <span>📑 PDF (30 Dias)</span>
-                </a>
+                </button>
 
                 <button onclick="triggerTelegramReport()" class="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 transition text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-sky-600/20">
                     <span>📢 Telegram</span>
@@ -145,11 +144,16 @@
         <!-- Sondas Table Section -->
         <section class="bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-sm">
             <div class="px-6 py-4 border-b border-dark-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-base font-bold text-white">Sondas em Campo & Diagnóstico em Tempo Real</h2>
-                    <p class="text-xs text-slate-400">Varredura automática e classificação temporal a cada 5 segundos</p>
+                <div class="flex items-center gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-white">Sondas em Campo & Diagnóstico em Tempo Real</h2>
+                        <p class="text-xs text-slate-400">Selecione nos checkboxes as granjas que deseja incluir no relatório PDF</p>
+                    </div>
                 </div>
-                <div class="flex items-center space-x-2">
+                <div class="flex items-center space-x-3">
+                    <span id="selected-count-badge" class="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg font-medium hidden">
+                        0 selecionados
+                    </span>
                     <input type="text" id="filter-input" onkeyup="filterTable()" placeholder="Filtrar granja, IP ou MAC..." class="bg-dark-bg border border-dark-border text-xs rounded-lg px-3 py-2 text-white placeholder-slate-500 outline-none focus:border-emerald-500 w-64">
                 </div>
             </div>
@@ -158,19 +162,23 @@
                 <table class="w-full text-left text-xs text-slate-300">
                     <thead class="bg-slate-900/60 uppercase text-slate-400 font-semibold border-b border-dark-border">
                         <tr>
-                            <th class="px-6 py-3.5">Status Geral</th>
-                            <th class="px-6 py-3.5">Ponto / Granja</th>
-                            <th class="px-6 py-3.5">Hardware / Versão</th>
-                            <th class="px-6 py-3.5">Alvo LAN (Gateway)</th>
-                            <th class="px-6 py-3.5">Latência</th>
-                            <th class="px-6 py-3.5">Sinal Wi-Fi</th>
-                            <th class="px-6 py-3.5">Uptime</th>
-                            <th class="px-6 py-3.5">Último Batimento</th>
+                            <th class="px-4 py-3.5 w-10 text-center">
+                                <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)" class="rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 cursor-pointer">
+                            </th>
+                            <th class="px-5 py-3.5">Status Geral</th>
+                            <th class="px-5 py-3.5">Ponto / Granja</th>
+                            <th class="px-5 py-3.5">Hardware / Versão</th>
+                            <th class="px-5 py-3.5">Alvo LAN (Gateway)</th>
+                            <th class="px-5 py-3.5">Latência</th>
+                            <th class="px-5 py-3.5">Sinal Wi-Fi</th>
+                            <th class="px-5 py-3.5">Uptime</th>
+                            <th class="px-5 py-3.5">Último Batimento</th>
+                            <th class="px-4 py-3.5 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="devices-table-body" class="divide-y divide-dark-border font-medium">
                         <tr>
-                            <td colspan="8" class="text-center py-8 text-slate-500">Carregando dados das sondas...</td>
+                            <td colspan="10" class="text-center py-8 text-slate-500">Carregando dados das sondas...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -199,6 +207,8 @@
 
     <!-- Frontend Logic -->
     <script>
+        let currentSelectedIds = new Set();
+
         async function fetchDashboardData() {
             try {
                 const res = await fetch('/api/v1/devices/summary');
@@ -214,7 +224,7 @@
                 // Update Devices Table
                 const tbody = document.getElementById('devices-table-body');
                 if (data.devices.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">Nenhuma sonda cadastrada no momento.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8 text-slate-500">Nenhuma sonda cadastrada no momento.</td></tr>';
                 } else {
                     tbody.innerHTML = data.devices.map(d => {
                         let statusBadge = '';
@@ -235,26 +245,38 @@
                             ? (d.local_target_online ? `<span class="text-emerald-400 font-bold">${d.local_target_rtt_ms.toFixed(1)} ms</span>` : '<span class="text-rose-400 font-bold">OFFLINE</span>')
                             : '<span class="text-slate-500">-</span>';
 
+                        const isChecked = currentSelectedIds.has(d.device_id) ? 'checked' : '';
+
                         return `
                             <tr class="hover:bg-dark-hover transition">
-                                <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 text-center">
+                                    <input type="checkbox" value="${d.device_id}" ${isChecked} onchange="onDeviceCheckboxChange(this)" class="device-checkbox rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-0 cursor-pointer">
+                                </td>
+                                <td class="px-5 py-4 whitespace-nowrap">${statusBadge}</td>
+                                <td class="px-5 py-4 whitespace-nowrap">
                                     <div class="font-bold text-white text-sm">${d.location_name}</div>
                                     <div class="text-[11px] text-slate-400 font-mono">${d.device_id} • ${d.device_mac}</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-5 py-4 whitespace-nowrap">
                                     <div class="text-slate-300 font-medium">${d.hardware_model}</div>
                                     <div class="text-[11px] text-slate-500">v${d.firmware_version} • Int: ${Math.round((d.check_interval_seconds || 300)/60)}m</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">${lanTarget}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">${lanRtt}</td>
-                                <td class="px-6 py-4 whitespace-nowrap font-mono text-slate-300">${wifiRssi}</td>
-                                <td class="px-6 py-4 whitespace-nowrap font-mono text-emerald-400">${d.uptime_formatted || d.uptime_seconds + 's'}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-slate-400">${formatDate(d.last_seen_at)}</td>
+                                <td class="px-5 py-4 whitespace-nowrap">${lanTarget}</td>
+                                <td class="px-5 py-4 whitespace-nowrap">${lanRtt}</td>
+                                <td class="px-5 py-4 whitespace-nowrap font-mono text-slate-300">${wifiRssi}</td>
+                                <td class="px-5 py-4 whitespace-nowrap font-mono text-emerald-400">${d.uptime_formatted || d.uptime_seconds + 's'}</td>
+                                <td class="px-5 py-4 whitespace-nowrap text-slate-400">${formatDate(d.last_seen_at)}</td>
+                                <td class="px-4 py-4 text-center whitespace-nowrap">
+                                    <a href="/api/v1/reports/pdf?days=7&device_ids=${d.device_id}" target="_blank" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[10px] font-semibold transition" title="Gerar laudo PDF individual desta granja">
+                                        📄 PDF
+                                    </a>
+                                </td>
                             </tr>
                         `;
                     }).join('');
                 }
+
+                updateSelectedBadge();
 
                 // Update Incidents
                 fetchIncidents();
@@ -264,6 +286,48 @@
             } catch (err) {
                 console.error('Erro ao buscar dados:', err);
             }
+        }
+
+        function onDeviceCheckboxChange(el) {
+            if (el.checked) {
+                currentSelectedIds.add(el.value);
+            } else {
+                currentSelectedIds.delete(el.value);
+            }
+            updateSelectedBadge();
+        }
+
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll('.device-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = master.checked;
+                if (master.checked) {
+                    currentSelectedIds.add(cb.value);
+                } else {
+                    currentSelectedIds.delete(cb.value);
+                }
+            });
+            updateSelectedBadge();
+        }
+
+        function updateSelectedBadge() {
+            const badge = document.getElementById('selected-count-badge');
+            const count = currentSelectedIds.size;
+            if (count > 0) {
+                badge.innerText = `${count} selecionado${count > 1 ? 's' : ''}`;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function generateSelectedPDF(days) {
+            let url = `/api/v1/reports/pdf?days=${days}`;
+            if (currentSelectedIds.size > 0) {
+                const ids = Array.from(currentSelectedIds).join(',');
+                url += `&device_ids=${encodeURIComponent(ids)}`;
+            }
+            window.open(url, '_blank');
         }
 
         async function fetchIncidents() {
@@ -343,6 +407,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     alert("✓ " + data.message);
+                    currentSelectedIds.clear();
                     fetchDashboardData();
                 } else {
                     alert("✕ Erro: " + (data.detail || "Senha incorreta"));
