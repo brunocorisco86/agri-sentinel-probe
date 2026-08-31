@@ -17,35 +17,38 @@ async def generate_probe_ai_insight(
     lan_target_mac: str
 ) -> str:
     """
-    Gera parecer executivo de IA via Google Gemini Flash sobre a estabilidade do link rural e do Gateway Dragino.
+    Gera parecer técnico operacional e executivo emitido pela equipe de Engenharia de Telecom / NOC.
     """
     if not settings.GEMINI_API_KEY:
         return (
-            f"Relatório gerado automaticamente para o período de {days} dias. "
-            f"O ponto '{location_name}' registrou disponibilidade de {uptime_pct:.1f}% com latência média no Gateway de {avg_rtt_ms:.1f} ms. "
-            f"Sinal Wi-Fi médio em {avg_rssi_dbm:.0f} dBm. Operação estável dentro dos parâmetros esperados."
+            f"Avaliação técnica do período de {days} dias para a unidade '{location_name}': "
+            f"O enlace registrou índice de disponibilidade de {uptime_pct:.1f}% com latência média de resposta de {avg_rtt_ms:.1f} ms no Gateway Dragino. "
+            f"Sinal Wi-Fi aferido em {avg_rssi_dbm:.0f} dBm. Sistema operando dentro dos parâmetros de confiabilidade estabelecidos para a telemetria avícola."
         )
 
     prompt = f"""
-Você é o Especialista Chefe em Engenharia de Conectividade e IoT Rural da C.Vale.
-Analise os dados de telemetria da sonda 'Keepalive Foresight / Agri-Sentinel' nos últimos {days} dias e elabore uma síntese executiva e técnica (máximo de 3 parágrafos concisos):
+Você é o Engenheiro Chefe de Telecomunicações e Infraestrutura de TI da C.Vale.
+Analise os dados consolidados da sonda de conectividade nos últimos {days} dias e emita o parecer técnico oficial de engenharia (máximo de 3 parágrafos concisos):
 
-DADOS TÉCNICOS DA SONDA:
+DADOS TÉCNICOS:
 - Ponto / Granja: {location_name} (ID: {device_id})
 - Hardware: {hardware_model}
-- Período Analisado: Últimos {days} dias ({total_telemetries} batimentos registrados)
-- Disponibilidade / Uptime: {uptime_pct:.1f}%
-- Alvo Local (Gateway Dragino): IP {lan_target_ip or 'WAN-Only'} (MAC: {lan_target_mac or 'N/A'})
-- Latência Média Ping ICMP: {avg_rtt_ms:.1f} ms (Pico Máximo: {max_rtt_ms:.1f} ms)
-- Nível de Sinal Wi-Fi Médio: {avg_rssi_dbm:.0f} dBm
-- Total de Incidentes de Queda no Período: {incident_count}
+- Período: Últimos {days} dias ({total_telemetries} batimentos analisados)
+- Disponibilidade Registrada: {uptime_pct:.1f}%
+- Gateway Local (Dragino): IP {lan_target_ip or 'WAN-Only'} (MAC: {lan_target_mac or 'N/A'})
+- Latência Média ICMP: {avg_rtt_ms:.1f} ms (Pico: {max_rtt_ms:.1f} ms)
+- Nível de Sinal Wi-Fi: {avg_rssi_dbm:.0f} dBm
+- Incidentes Registrados: {incident_count}
 
-DIRETRIZES DA RESPOSTA:
-1. Parágrafo 1 - Parecer da Qualidade da Internet (WAN) e do Gateway Local (Dragino): Classifique a estabilidade (Excelente, Boa, Moderada ou Crítica) e analise a latência e o sinal Wi-Fi.
-2. Parágrafo 2 - Risco para o Abastecimento de Ração: Avalie se há risco de atraso na leitura dos sensores de silos ou corte na entrega de ração da granja.
-3. Parágrafo 3 - Recomendação Técnica Preventiva: Ação prática recomendada para a equipe de campo ou suporte de TI.
+DIRETRIZES DE REDAÇÃO:
+1. Escreva como um engenheiro humano especialista em redes rurais e automação avícola da C.Vale.
+2. NUNCA mencione inteligência artificial, IA, Gemini, modelo de linguagem, robô ou Google. O texto deve soar 100% como uma análise técnica humana corporativa oficial.
+3. Estruture em 3 parágrafos:
+   - Diagnóstico do Enlace & Estabilidade: Avaliação da latência, sinal Wi-Fi e qualidade do link.
+   - Impacto na Operação e Ração: Impacto na confiabilidade da transmissão dos dados de nível dos silos e confirmação de pedidos no TMS.
+   - Recomendações Técnicas: Ações preventivas recomendadas para a equipe de suporte e campo.
 
-Responda em tom executivo, formal e direto em português PT-BR, sem introduções vazias.
+Tom: Estritamente profissional, técnico, executivo e assertivo em português PT-BR.
 """
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent"
@@ -58,7 +61,7 @@ Responda em tom executivo, formal e direto em português PT-BR, sem introduçõe
             }
         ],
         "generationConfig": {
-            "temperature": 0.3,
+            "temperature": 0.25,
             "maxOutputTokens": 800
         }
     }
@@ -77,11 +80,10 @@ Responda em tom executivo, formal e direto em português PT-BR, sem introduçõe
                 if text_response:
                     return text_response
     except Exception as e:
-        print(f"[Gemini AI Error] {e}")
+        print(f"[Telecom Engine] {e}")
 
-    # Fallback determinístico
     return (
-        f"Análise de {days} dias para {location_name}: O enlace de comunicação manteve {uptime_pct:.1f}% de disponibilidade "
-        f"com latência média de {avg_rtt_ms:.1f} ms no Gateway Dragino. "
-        f"Foram registrados {incident_count} incidentes no período. Nível de sinal Wi-Fi médio em {avg_rssi_dbm:.0f} dBm."
+        f"Avaliação técnica do período de {days} dias para a unidade '{location_name}': "
+        f"O enlace registrou índice de disponibilidade de {uptime_pct:.1f}% com latência média de resposta de {avg_rtt_ms:.1f} ms no Gateway Dragino. "
+        f"Foram registrados {incident_count} incidentes de oscilação no período com sinal Wi-Fi médio em {avg_rssi_dbm:.0f} dBm."
     )

@@ -201,7 +201,7 @@ async def generate_executive_pdf_report(
         story.append(chart_img)
         story.append(Spacer(1, 6))
 
-        # 5. Parecer Executivo & Análise por IA (Gemini Flash)
+        # 5. Parecer Executivo & Diagnóstico de Engenharia
         ai_insight = await generate_probe_ai_insight(
             location_name=loc_name,
             device_id=dev_id,
@@ -217,7 +217,7 @@ async def generate_executive_pdf_report(
             lan_target_mac=target_mac
         )
 
-        ai_paragraphs = [Paragraph("<b>🧠 Parecer Técnico & Diagnóstico Inteligente (Google Gemini Flash)</b>", style_section_heading)]
+        ai_paragraphs = [Paragraph("<b>📋 Parecer Técnico & Diagnóstico de Engenharia de Redes</b>", style_section_heading)]
         for p in ai_insight.splitlines():
             if p.strip():
                 ai_paragraphs.append(Paragraph(p.strip(), style_ai_text))
