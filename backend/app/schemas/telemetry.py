@@ -9,6 +9,7 @@ class TelemetryPayload(BaseModel):
     hardware_model: str = Field("ESP32 Generic", description="Modelo da placa (LilyGO / C3)")
     firmware_version: str = Field("1.0.0", description="Versão do firmware")
     uptime_seconds: int = Field(0, ge=0, description="Tempo de atividade em segundos")
+    check_interval_seconds: int = Field(300, ge=10, description="Intervalo de telemetria em segundos")
     wifi_ssid: Optional[str] = None
     wifi_rssi_dbm: Optional[int] = None
     local_target_enabled: bool = False

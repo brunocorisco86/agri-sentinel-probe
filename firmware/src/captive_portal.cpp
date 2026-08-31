@@ -95,8 +95,8 @@ void CaptivePortal::handleSave() {
         String token = _server.hasArg("api_token") ? _server.arg("api_token") : "keepalive-default-token";
         strncpy(_pendingConfig.api_token, token.c_str(), sizeof(_pendingConfig.api_token) - 1);
         
-        uint16_t interval = _server.hasArg("interval") ? _server.arg("interval").toInt() : 10;
-        _pendingConfig.check_interval_sec = (interval < 3) ? 10 : interval;
+        uint16_t interval = _server.hasArg("interval") ? _server.arg("interval").toInt() : 300;
+        _pendingConfig.check_interval_sec = (interval < 60) ? 300 : interval;
         _pendingConfig.configured = true;
         
         _configSubmitted = true;
@@ -207,6 +207,19 @@ String CaptivePortal::buildHTML() {
 
             <label for="api_token">Token da API</label>
             <input type="text" id="api_token" name="api_token" value="keepalive-secret-token-123">
+
+            <!-- 5. Frequencia de Verificacao -->
+            <div class="section-title">5. Frequência de Verificação</div>
+            <label for="interval">Intervalo de Monitoramento</label>
+            <select id="interval" name="interval">
+                <option value="60">1 Minuto</option>
+                <option value="300" selected>5 Minutos (Padrão Recomendado)</option>
+                <option value="600">10 Minutos</option>
+                <option value="900">15 Minutos</option>
+                <option value="1800">30 Minutos</option>
+                <option value="3600">60 Minutos (1 Hora)</option>
+            </select>
+            <p class="help-text">💡 Define de quanto em quanto tempo a sonda testará a rede e enviará o relatório.</p>
 
             <button type="submit" class="btn-submit">Salvar & Iniciar Sonda</button>
         </form>

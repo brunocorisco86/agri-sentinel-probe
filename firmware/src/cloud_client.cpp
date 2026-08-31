@@ -26,6 +26,7 @@ bool CloudClient::sendTelemetry(const AppConfig &config, ProbeMetrics &metrics) 
     doc["hardware_model"] = metrics.hardware_model;
     doc["firmware_version"] = FIRMWARE_VERSION;
     doc["uptime_seconds"] = metrics.uptime_sec;
+    doc["check_interval_seconds"] = config.check_interval_sec;
     doc["wifi_ssid"] = metrics.wifi_connected ? WiFi.SSID() : "N/A";
     doc["wifi_rssi_dbm"] = metrics.wifi_rssi;
     

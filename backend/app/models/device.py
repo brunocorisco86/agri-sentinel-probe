@@ -16,6 +16,9 @@ class Device(Base):
     status = Column(String(32), default="ONLINE", index=True)
     last_seen_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
     
+    # Intervalo de Envio Configurado
+    check_interval_seconds = Column(Integer, default=300)
+    
     # Métricas de Conectividade
     wifi_ssid = Column(String(64), nullable=True)
     wifi_rssi_dbm = Column(Integer, nullable=True)

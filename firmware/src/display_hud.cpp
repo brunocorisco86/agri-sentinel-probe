@@ -1,5 +1,25 @@
 #include "display_hud.h"
 
+static String formatUptime(uint32_t s) {
+    uint32_t days = s / 86400;
+    s %= 86400;
+    uint32_t hours = s / 3600;
+    s %= 3600;
+    uint32_t mins = s / 60;
+    uint32_t secs = s % 60;
+    
+    if (days > 0) {
+        return String(days) + "d " + String(hours) + "h";
+    } else if (hours > 0) {
+        return String(hours) + "h " + String(mins) + "m";
+    } else if (mins > 0) {
+        return String(mins) + "m " + String(secs) + "s";
+    } else {
+        return String(secs) + "s";
+    }
+}
+
+
 DisplayHUD hud;
 
 DisplayHUD::DisplayHUD()
@@ -150,7 +170,7 @@ void DisplayHUD::updateHUD(const ProbeMetrics &metrics, const AppConfig &config)
     _tft->drawString("Ponto: " + String(config.location_name), 6, 4, 2);
     
     _tft->setTextDatum(TR_DATUM);
-    _tft->drawString(String(metrics.wifi_rssi) + "dBm | " + String(metrics.uptime_sec) + "s", w - 6, 4, 2);
+    _tft->drawString(String(metrics.wifi_rssi) + "dBm | " + formatUptime(metrics.uptime_sec), w - 6, 4, 2);
     
     // Dimensões dos blocos centrais
     int blockW = (w - 18) / 2;

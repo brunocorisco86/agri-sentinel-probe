@@ -1,5 +1,5 @@
 import datetime
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.core.database import get_db
@@ -37,6 +37,7 @@ async def receive_telemetry(payload: TelemetryPayload, db: AsyncSession = Depend
             firmware_version=payload.firmware_version,
             status=status_code,
             last_seen_at=now,
+            check_interval_seconds=payload.check_interval_seconds,
             wifi_ssid=payload.wifi_ssid,
             wifi_rssi_dbm=payload.wifi_rssi_dbm,
             local_target_enabled=payload.local_target_enabled,
@@ -55,6 +56,7 @@ async def receive_telemetry(payload: TelemetryPayload, db: AsyncSession = Depend
         device.firmware_version = payload.firmware_version
         device.status = status_code
         device.last_seen_at = now
+        device.check_interval_seconds = payload.check_interval_seconds
         device.wifi_ssid = payload.wifi_ssid
         device.wifi_rssi_dbm = payload.wifi_rssi_dbm
         device.local_target_enabled = payload.local_target_enabled
@@ -79,7 +81,6 @@ async def receive_telemetry(payload: TelemetryPayload, db: AsyncSession = Depend
     
     # 4. Gestão de Incidentes (Auto-recovery ou abertura)
     if status_code == STATE_LAN_FAILURE:
-        # Verifica se já existe incidente de LAN aberto
         inc_q = select(Incident).where(
             and_(Incident.device_id == payload.device_id, Incident.status == "OPEN")
         )
@@ -94,7 +95,6 @@ async def receive_telemetry(payload: TelemetryPayload, db: AsyncSession = Depend
             )
             db.add(inc)
     elif status_code == STATE_ONLINE:
-        # Auto-Recovery: fecha qualquer incidente em aberto para esta sonda
         inc_q = select(Incident).where(
             and_(Incident.device_id == payload.device_id, Incident.status == "OPEN")
         )
