@@ -21,6 +21,24 @@ unsigned long btnPressStartTime = 0;
 bool btnPressed = false;
 uint32_t bootTimestamp = 0;
 
+#include <time.h>
+
+void syncNTP() {
+    // Configura fuso horário Brasil (UTC-3)
+    configTzTime("<-03>3", "a.st1.ntp.br", "b.st1.ntp.br", "pool.ntp.org");
+    Serial.println("[NTP] Sincronizacao de horario UTC-3 iniciada...");
+}
+
+String getFormattedDateTime() {
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo, 10)) {
+        return "";
+    }
+    char buf[32];
+    strftime(buf, sizeof(buf), "%H:%M %d/%m", &timeinfo);
+    return String(buf);
+}
+
 void setupIdentifiers() {
     uint8_t mac[6];
     WiFi.macAddress(mac);
@@ -180,8 +198,10 @@ void loop() {
             probeMetrics.gateway_ip = WiFi.gatewayIP().toString();
             probeMetrics.wifi_rssi = WiFi.RSSI();
             
+            syncNTP();
             currentState = STATE_MONITORING;
-            lastTelemetryMillis = 0; // Forca execucao imediata do primeiro ciclo
+            unsigned long intervalMs = appConfig.check_interval_sec * 1000UL;
+            lastTelemetryMillis = millis() - intervalMs - 1000UL; // Forca envio IMEDIATO no boot/conexao
         } else {
             Serial.println();
             Serial.println("[WIFI] Falha ao conectar. Reabrindo modo AP...");
@@ -248,6 +268,7 @@ void loop() {
         // Atualiza HUD a cada 500ms
         if (millis() - lastHudUpdateMillis >= 500) {
             lastHudUpdateMillis = millis();
+            probeMetrics.current_time_str = getFormattedDateTime();
             hud.updateHUD(probeMetrics, appConfig);
         }
     }

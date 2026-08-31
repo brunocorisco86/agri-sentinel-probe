@@ -77,8 +77,9 @@ struct ProbeMetrics {
     uint32_t packets_lost;
     uint32_t free_heap_bytes;
     
-    // Identificadores Únicos
+    // Identificadores Únicos e Relógio NTP
     String device_id;
     String device_mac;
     String hardware_model;
+    String current_time_str;
 };

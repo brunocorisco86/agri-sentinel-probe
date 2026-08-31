@@ -172,7 +172,12 @@ void DisplayHUD::updateHUD(const ProbeMetrics &metrics, const AppConfig &config)
     _tft->drawString("Ponto: " + String(config.location_name), 6, 4, 2);
     
     _tft->setTextDatum(TR_DATUM);
-    _tft->drawString(String(metrics.wifi_rssi) + "dBm | " + formatUptime(metrics.uptime_sec), w - 6, 4, 2);
+    String headerRight = "";
+    if (metrics.current_time_str.length() > 0) {
+        headerRight += metrics.current_time_str + " | ";
+    }
+    headerRight += "Up: " + formatUptime(metrics.uptime_sec) + " | " + String(metrics.wifi_rssi) + "dBm";
+    _tft->drawString(headerRight, w - 6, 4, 2);
     
     // Dimensões dos blocos centrais
     int blockW = (w - 18) / 2;
