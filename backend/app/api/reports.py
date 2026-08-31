@@ -1,13 +1,81 @@
+import io
 import datetime
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from app.core.database import get_db
 from app.models.device import Device
+from app.models.telemetry import Telemetry
 from app.models.incident import Incident
 from app.services.telegram_bot import send_telegram_alert
+from app.services.pdf_generator import generate_executive_pdf_report
 
 router = APIRouter(prefix="/reports", tags=["Relatórios"])
+
+@router.get("/pdf")
+async def get_executive_pdf_report(
+    days: int = Query(7, description="Período em dias para o relatório (Ex: 7 ou 30)"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Gera e exporta relatório executivo em formato PDF para os últimos 7 ou 30 dias (1 sonda por página com série temporal e IA).
+    """
+    now = datetime.datetime.utcnow()
+    since_date = now - datetime.timedelta(days=days)
+    
+    # 1. Busca dispositivos
+    dev_query = select(Device)
+    dev_res = await db.execute(dev_query)
+    devices = dev_res.scalars().all()
+    
+    devices_data = []
+    for dev in devices:
+        # Busca telemetrias recentes do dispositivo
+        tel_query = select(Telemetry).where(
+            and_(
+                Telemetry.device_id == dev.device_id,
+                Telemetry.received_at >= since_date
+            )
+        ).order_by(Telemetry.received_at.asc())
+        tel_res = await db.execute(tel_query)
+        telemetries = [
+            {
+                "received_at": t.received_at,
+                "local_target_rtt_ms": t.local_target_rtt_ms,
+                "wifi_rssi_dbm": t.wifi_rssi_dbm,
+                "local_target_online": t.local_target_online
+            }
+            for t in tel_res.scalars().all()
+        ]
+        
+        # Busca incidentes no período
+        inc_query = select(Incident).where(
+            and_(
+                Incident.device_id == dev.device_id,
+                Incident.opened_at >= since_date
+            )
+        )
+        inc_res = await db.execute(inc_query)
+        incidents = inc_res.scalars().all()
+        
+        devices_data.append({
+            "device": dev,
+            "device_id": dev.device_id,
+            "location_name": dev.location_name,
+            "hardware_model": dev.hardware_model,
+            "telemetries": telemetries,
+            "incidents": incidents
+        })
+        
+    pdf_buffer = await generate_executive_pdf_report(devices_data, days=days)
+    
+    filename = f"keepalive_relatorio_executivo_{days}d.pdf"
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 @router.post("/daily-telegram")
 async def generate_daily_telegram_report(db: AsyncSession = Depends(get_db)):

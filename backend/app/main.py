@@ -2,7 +2,8 @@ import asyncio
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
@@ -44,6 +45,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Servir arquivos estáticos (favicon, assets)
+STATIC_DIR = Path(__file__).parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 app.include_router(telemetry_router, prefix=settings.API_V1_STR)
 app.include_router(devices_router, prefix=settings.API_V1_STR)
 app.include_router(incidents_router, prefix=settings.API_V1_STR)
@@ -54,6 +60,13 @@ TEMPLATE_PATH = Path(__file__).parent / "templates" / "dashboard.html"
 @app.get("/", include_in_schema=False)
 async def root_redirect():
     return RedirectResponse(url="/dashboard")
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    fav_path = STATIC_DIR / "favicon.svg"
+    if fav_path.exists():
+        return FileResponse(fav_path, media_type="image/svg+xml")
+    return HTMLResponse(status_code=404)
 
 @app.get("/dashboard", response_class=HTMLResponse, tags=["Dashboard"])
 async def serve_dashboard():

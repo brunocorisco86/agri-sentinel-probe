@@ -9,9 +9,11 @@ services:
       - "8016:8000"
     environment:
       - DATABASE_URL=sqlite+aiosqlite:////app/data/keepalive.db
-      - API_SECRET_TOKEN=keepalive-secret-token-123
-      - TELEGRAM_BOT_TOKEN=8907806195:AAHJWLT7iIlGfNS_xgUL9RWeXAb_Gx_m5Iw
-      - TELEGRAM_CHAT_ID=1959691903
+      - API_SECRET_TOKEN=${API_SECRET_TOKEN:-keepalive-secret-token-123}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.6-flash}
       - DEADMAN_INTERVAL_SECONDS=10
       - DEADMAN_TIMEOUT_SECONDS=30
     volumes:
