@@ -29,6 +29,7 @@ RESET = "[0m"
 PROJECT_ROOT = Path(__file__).resolve().parent
 FIRMWARE_DIR = PROJECT_ROOT / "firmware"
 BUILD_DIR = FIRMWARE_DIR / ".pio" / "build"
+BOOT_APP0 = FIRMWARE_DIR / "boot_app0.bin"
 
 HARDWARE_CONFIGS = {
     "1": {
@@ -227,6 +228,7 @@ def check_or_compile(hw_config):
     return {
         "bootloader": str(bootloader),
         "partitions": str(partitions),
+        "boot_app0": str(BOOT_APP0),
         "firmware": str(firmware)
     }
 
@@ -246,7 +248,7 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
             erase_cmd[-1] = "erase_flash"
             res = subprocess.run(erase_cmd)
             if res.returncode != 0:
-                print(f"\n{RED}❌ Erro durante o erase_flash. Verifique a conexao do cabo.{RESET}")
+                print(f"\n{RED}❌ Erro durante o erase_flash. Verifique a conexao do cabo ou feche o monitor serial.{RESET}")
                 return False
             
     print(f"\n{CYAN}⚡ Gravando Firmware via esptool ({hw_config['name']})...{RESET}")
@@ -263,6 +265,7 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
         "--flash-freq", f_freq,
         boot_offset, bins["bootloader"],
         "0x8000", bins["partitions"],
+        "0xe000", bins["boot_app0"],
         "0x10000", bins["firmware"]
     ]
     
@@ -282,7 +285,7 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
         return True
     else:
         print(f"\n{RED}{BOLD}❌ Falha na gravacao do firmware.{RESET}")
-        print(f"{YELLOW}Dica: Tente segurar o botao BOOT enquanto clica no botao RESET e tente novamente.{RESET}")
+        print(f"{YELLOW}Dica: Feche outros monitores seriais ou segure BOOT ao conectar.{RESET}")
         return False
 
 def open_serial_monitor(port):
@@ -322,7 +325,7 @@ def main():
     bins = check_or_compile(hw_config)
     
     print(f"\n{BOLD}Opcoes de Gravacao:{RESET}")
-    print(f"  {CYAN}[1]{RESET} {BOLD}Gravacao Direta do Firmware{RESET} (Mantem dados previos se compativeis)")
+    print(f"  {CYAN}[1]{RESET} {BOLD}Gravacao Completa via esptool{RESET} (Com boot_app0 OTA + NVS limpa)")
     print(f"  {CYAN}[2]{RESET} {BOLD}Erase Flash + Gravacao Limpa{RESET} ({YELLOW}Recomendado{RESET} para primeiro uso)")
     print(f"  {CYAN}[3]{RESET} Apenas Abrir Monitor Serial")
     
