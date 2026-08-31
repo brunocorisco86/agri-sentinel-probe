@@ -19,8 +19,8 @@ public:
 
 private:
 #if defined(HAS_TFT_DISPLAY)
-    TFT_eSPI _tft;
-    TFT_eSprite _spr;
+    TFT_eSPI* _tft;
+    TFT_eSprite* _spr;
     bool _initialized;
 #endif
 

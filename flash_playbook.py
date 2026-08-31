@@ -36,6 +36,9 @@ HARDWARE_CONFIGS = {
         "env": "t-display-s3",
         "chip": "esp32s3",
         "bootloader_offset": "0x0",
+        "flash_mode": "qio",
+        "flash_size": "16MB",
+        "flash_freq": "80m",
         "display": "ST7789 320x170 8-bit Parallel (Power PIN 15, BL 38)",
         "buttons_guide": (
             f"{BOLD}Instrucoes de Hardware & Botoes (LilyGO T-Display-S3):{RESET}\n"
@@ -49,6 +52,9 @@ HARDWARE_CONFIGS = {
         "env": "ttgo-t-display",
         "chip": "esp32",
         "bootloader_offset": "0x1000",
+        "flash_mode": "dio",
+        "flash_size": "4MB",
+        "flash_freq": "40m",
         "display": "ST7789 240x135 SPI DMA (Backlight GPIO 4)",
         "buttons_guide": (
             f"{BOLD}Instrucoes de Hardware & Botoes (LilyGO T-Display Classico):{RESET}\n"
@@ -62,6 +68,9 @@ HARDWARE_CONFIGS = {
         "env": "esp32-c3-supermini",
         "chip": "esp32c3",
         "bootloader_offset": "0x0",
+        "flash_mode": "dio",
+        "flash_size": "4MB",
+        "flash_freq": "40m",
         "display": "Sem Display (LED de Status Azul no GPIO 8)",
         "buttons_guide": (
             f"{BOLD}Instrucoes de Hardware & Botoes (ESP32-C3 SuperMini):{RESET}\n"
@@ -138,11 +147,11 @@ def detect_chip_type(esptool_bin, port):
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
         out = (res.stdout + res.stderr).lower()
         if "esp32-s3" in out or "esp32s3" in out:
-            return "1" # T-Display-S3
+            return "1"
         elif "esp32-c3" in out or "esp32c3" in out:
-            return "3" # C3 SuperMini
+            return "3"
         elif "esp32" in out:
-            return "2" # ESP32 Classico
+            return "2"
     except Exception:
         pass
     return None
@@ -224,6 +233,9 @@ def check_or_compile(hw_config):
 def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
     chip = hw_config["chip"]
     boot_offset = hw_config["bootloader_offset"]
+    f_mode = hw_config.get("flash_mode", "dio")
+    f_size = hw_config.get("flash_size", "4MB")
+    f_freq = hw_config.get("flash_freq", "40m")
     
     if erase_first:
         print(f"\n{YELLOW}🧹 Executando apagamento completo da Flash (Erase Flash)...{RESET}")
@@ -231,7 +243,6 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
         print(f"{DIM}Comando: {' '.join(erase_cmd)}{RESET}")
         res = subprocess.run(erase_cmd)
         if res.returncode != 0:
-            # Tenta fallback para erase_flash caso seja versao antiga
             erase_cmd[-1] = "erase_flash"
             res = subprocess.run(erase_cmd)
             if res.returncode != 0:
@@ -239,15 +250,17 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
                 return False
             
     print(f"\n{CYAN}⚡ Gravando Firmware via esptool ({hw_config['name']})...{RESET}")
+    print(f"{DIM}Parametros: Chip={chip}, Mode={f_mode}, Size={f_size}, Freq={f_freq}{RESET}")
+    
     flash_cmd = [
         esptool_bin,
         "-p", port,
         "-b", "460800",
         "--chip", chip,
         "write-flash",
-        "--flash_mode", "dio",
-        "--flash_size", "4MB",
-        "--flash_freq", "40m",
+        "--flash-mode", f_mode,
+        "--flash-size", f_size,
+        "--flash-freq", f_freq,
         boot_offset, bins["bootloader"],
         "0x8000", bins["partitions"],
         "0x10000", bins["firmware"]
@@ -257,8 +270,11 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
     res = subprocess.run(flash_cmd)
     
     if res.returncode != 0:
-        # Fallback para write_flash com underscore
+        # Fallback para opcoes antigas com underscore
         flash_cmd[6] = "write_flash"
+        flash_cmd[7] = "--flash_mode"
+        flash_cmd[9] = "--flash_size"
+        flash_cmd[11] = "--flash_freq"
         res = subprocess.run(flash_cmd)
     
     if res.returncode == 0:

@@ -84,12 +84,11 @@ void setup() {
         esp_task_wdt_config_t twdt_config = {
             .timeout_ms = 30000,
             .idle_core_mask = 0,
-            .trigger_panic = true
+            .trigger_panic = false
         };
-        esp_task_wdt_init(&twdt_config);
-        esp_task_wdt_add(NULL);
+        esp_task_wdt_reconfigure(&twdt_config);
     #else
-        esp_task_wdt_init(30, true);
+        esp_task_wdt_init(30, false);
         esp_task_wdt_add(NULL);
     #endif
 
