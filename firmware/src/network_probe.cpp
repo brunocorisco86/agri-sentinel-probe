@@ -2,8 +2,32 @@
 #include "lwip/etharp.h"
 #include "lwip/ip_addr.h"
 #include "lwip/netif.h"
+#include "ping/ping_sock.h"
 
 NetworkProbe networkProbe;
+
+struct PingContext {
+    bool success;
+    uint32_t rtt_ms;
+    bool done;
+};
+
+static void ping_on_ping_success(esp_ping_handle_t hdl, void *args) {
+    PingContext *ctx = (PingContext *)args;
+    uint32_t elapsed_time;
+    esp_ping_get_profile(hdl, ESP_PING_PROF_TIMEGAP, &elapsed_time, sizeof(elapsed_time));
+    ctx->success = true;
+    ctx->rtt_ms = elapsed_time;
+}
+
+static void ping_on_ping_timeout(esp_ping_handle_t hdl, void *args) {
+    // Timeout
+}
+
+static void ping_on_ping_end(esp_ping_handle_t hdl, void *args) {
+    PingContext *ctx = (PingContext *)args;
+    ctx->done = true;
+}
 
 NetworkProbe::NetworkProbe() {}
 
@@ -16,6 +40,7 @@ String NetworkProbe::queryArpTable(const IPAddress &targetIP) {
     
     // Dispara solicitacao ARP proativa na rede
     etharp_request(nif, &ip);
+    delay(10);
     
     struct eth_addr *eth_ret = nullptr;
     const ip4_addr_t *ip_ret = nullptr;
@@ -45,14 +70,47 @@ bool NetworkProbe::probeTarget(const char *targetIP, uint16_t targetPort, float 
         return false;
     }
     
-    // 1. Tenta resolucao ARP
-    macStr = queryArpTable(ip);
-    if (macStr.length() == 0) {
-        macStr = "ARP_PENDING";
+    // 1. Tenta ICMP Ping nativo (ESP-IDF)
+    ip_addr_t target_addr;
+    target_addr.type = IPADDR_TYPE_V4;
+    target_addr.u_addr.ip4.addr = static_cast<uint32_t>(ip);
+    
+    PingContext pingCtx = {false, 0, false};
+    
+    esp_ping_config_t ping_config = ESP_PING_DEFAULT_CONFIG();
+    ping_config.target_addr = target_addr;
+    ping_config.count = 2;              // Envia 2 pings
+    ping_config.interval_ms = 100;      // 100ms entre pings
+    ping_config.timeout_ms = 400;       // 400ms timeout
+    
+    esp_ping_callbacks_t cbs;
+    cbs.on_ping_success = ping_on_ping_success;
+    cbs.on_ping_timeout = ping_on_ping_timeout;
+    cbs.on_ping_end = ping_on_ping_end;
+    cbs.cb_args = &pingCtx;
+    
+    esp_ping_handle_t ping_hdl = nullptr;
+    if (esp_ping_new_session(&ping_config, &cbs, &ping_hdl) == ESP_OK) {
+        esp_ping_start(ping_hdl);
+        
+        unsigned long startWait = millis();
+        while (!pingCtx.done && (millis() - startWait < 1000)) {
+            delay(10);
+        }
+        
+        esp_ping_stop(ping_hdl);
+        esp_ping_delete_session(ping_hdl);
+        
+        if (pingCtx.success) {
+            rttMs = (float)pingCtx.rtt_ms;
+            macStr = queryArpTable(ip);
+            if (macStr.length() == 0) macStr = "PING-OK";
+            return true;
+        }
     }
     
-    // 2. Tenta abertura de Socket TCP rapido
-    _client.setTimeout(400); // 400ms max timeout
+    // 2. Fallback: Tenta abertura de Socket TCP na porta configurada
+    _client.setTimeout(400);
     unsigned long start = micros();
     bool connected = _client.connect(ip, targetPort);
     unsigned long elapsed = micros() - start;
@@ -60,22 +118,19 @@ bool NetworkProbe::probeTarget(const char *targetIP, uint16_t targetPort, float 
     if (connected) {
         rttMs = elapsed / 1000.0f;
         _client.stop();
-        
-        // Se conectou, consulta ARP novamente para atualizar MAC
-        String resolvedMac = queryArpTable(ip);
-        if (resolvedMac.length() > 0) {
-            macStr = resolvedMac;
-        }
+        macStr = queryArpTable(ip);
+        if (macStr.length() == 0) macStr = "TCP-OK";
         return true;
     }
     
-    // Se a porta TCP estiver fechada (RST recebido rápido), o host ainda assim está ONLINE na LAN!
-    // No ESP32, se a tentativa falhar em < 50ms com ARP resolvido, o dispositivo respondeu na camada de rede.
-    if (macStr != "ARP_PENDING" && elapsed < 80000) {
-        rttMs = elapsed / 1000.0f;
+    // 3. Fallback: Consulta tabela ARP
+    macStr = queryArpTable(ip);
+    if (macStr.length() > 0 && macStr != "00:00:00:00:00:00") {
+        rttMs = 1.0f;
         return true;
     }
     
+    macStr = "OFFLINE";
     rttMs = -1.0f;
     return false;
 }
