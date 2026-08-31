@@ -89,7 +89,7 @@ void CaptivePortal::handleSave() {
         
         _pendingConfig.target_lan_port = _server.hasArg("lan_port") ? _server.arg("lan_port").toInt() : 80;
         
-        String cloud = _server.hasArg("cloud_url") ? _server.arg("cloud_url") : "http://192.168.1.100:8000/api/v1/telemetry";
+        String cloud = _server.hasArg("cloud_url") ? _server.arg("cloud_url") : "http://192.168.1.90:8000/api/v1/telemetry";
         strncpy(_pendingConfig.cloud_url, cloud.c_str(), sizeof(_pendingConfig.cloud_url) - 1);
         
         String token = _server.hasArg("api_token") ? _server.arg("api_token") : "keepalive-default-token";
@@ -203,7 +203,7 @@ String CaptivePortal::buildHTML() {
             <!-- 4. Servidor Central VPS -->
             <div class="section-title">4. Servidor Central (VPS) <span class="badge-opt">Pré-configurado</span></div>
             <label for="cloud_url">Endpoint de Telemetria (FastAPI)</label>
-            <input type="text" id="cloud_url" name="cloud_url" value="http://192.168.1.100:8000/api/v1/telemetry">
+            <input type="text" id="cloud_url" name="cloud_url" value="http://192.168.1.90:8000/api/v1/telemetry">
 
             <label for="api_token">Token da API</label>
             <input type="text" id="api_token" name="api_token" value="keepalive-secret-token-123">
