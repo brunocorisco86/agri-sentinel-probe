@@ -199,6 +199,26 @@ void loop() {
             probeMetrics.wifi_rssi = WiFi.RSSI();
             
             syncNTP();
+            
+            // Política de Auto-Discovery no Boot com 5 Retries (caso equipamento esteja reiniciando)
+            if (strlen(appConfig.target_lan_mac) >= 11) {
+                float testRtt = 0;
+                String testMac = "";
+                bool reachable = false;
+                if (strlen(appConfig.target_lan_ip) > 0 && strcmp(appConfig.target_lan_ip, "0.0.0.0") != 0) {
+                    reachable = networkProbe.probeTarget(appConfig.target_lan_ip, appConfig.target_lan_port, testRtt, testMac);
+                }
+                
+                if (!reachable) {
+                    Serial.println("[BOOT] Alvo nao respondeu no IP salvo. Iniciando busca com politica de retries...");
+                    String foundIP = networkProbe.discoverIPByMAC(appConfig.target_lan_mac, 5, 2000);
+                    if (foundIP.length() > 0) {
+                        strncpy(appConfig.target_lan_ip, foundIP.c_str(), sizeof(appConfig.target_lan_ip) - 1);
+                        storage.saveConfig(appConfig);
+                    }
+                }
+            }
+            
             currentState = STATE_MONITORING;
             unsigned long intervalMs = appConfig.check_interval_sec * 1000UL;
             lastTelemetryMillis = millis() - intervalMs - 1000UL; // Forca envio IMEDIATO no boot/conexao

@@ -84,6 +84,9 @@ void CaptivePortal::handleSave() {
         String loc = _server.hasArg("location") && _server.arg("location").length() > 0 ? _server.arg("location") : "Ponto 01";
         strncpy(_pendingConfig.location_name, loc.c_str(), sizeof(_pendingConfig.location_name) - 1);
         
+        String lan_mac = _server.hasArg("lan_mac") ? _server.arg("lan_mac") : "";
+        strncpy(_pendingConfig.target_lan_mac, lan_mac.c_str(), sizeof(_pendingConfig.target_lan_mac) - 1);
+        
         String lan = _server.hasArg("lan_ip") ? _server.arg("lan_ip") : "";
         strncpy(_pendingConfig.target_lan_ip, lan.c_str(), sizeof(_pendingConfig.target_lan_ip) - 1);
         
@@ -195,10 +198,14 @@ String CaptivePortal::buildHTML() {
             <input type="password" id="pass" name="pass" placeholder="Senha do Wi-Fi (se houver)">
 
             <!-- 3. Alvo Local LAN -->
-            <div class="section-title">3. Alvo Local na Rede <span class="badge-opt">Opcional</span></div>
-            <label for="lan_ip">IP do Gateway Dragino ou Roteador</label>
-            <input type="text" id="lan_ip" name="lan_ip" placeholder="Ex: 192.168.1.50">
-            <p class="help-text">💡 <b>Para sua casa (WAN-Only):</b> Pode deixar este campo <b>em branco</b>. A sonda monitorará a conexão geral com a internet.</p>
+            <div class="section-title">3. Alvo Local na Rede (Gateway Dragino / CLP) <span class="badge-opt">Opcional</span></div>
+            <label for="lan_mac">🔍 MAC Address do Alvo <span style="color:#22c55e;">(Recomendado / Auto-Discovery DHCP)</span></label>
+            <input type="text" id="lan_mac" name="lan_mac" placeholder="Ex: A8:40:41:12:34:56 ou 00:1A:2B:3C:4D:5E">
+            <p class="help-text">⚡ <b>Recomendado:</b> Se o Gateway obtém IP dinâmico via DHCP (ou se faltar energia), a sonda buscará o MAC na rede no boot e atualizará o IP automaticamente!</p>
+
+            <label for="lan_ip" style="margin-top: 10px;">🎯 IP Estático Fixo <span style="color:#94a3b8;">(Apenas se tiver IP Estático)</span></label>
+            <input type="text" id="lan_ip" name="lan_ip" placeholder="Ex: 192.168.1.50 (Opcional se usar MAC)">
+            <p class="help-text">💡 <b>Para sua casa / Ponto Residencial:</b> Deixe ambos em branco (Modo WAN-Only).</p>
 
             <!-- 4. Servidor Central VPS -->
             <div class="section-title">4. Servidor Central (VPS) <span class="badge-opt">Pré-configurado</span></div>
