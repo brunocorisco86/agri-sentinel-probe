@@ -175,6 +175,14 @@ def select_hardware(detected_key=None):
             return HARDWARE_CONFIGS[choice]
         print(f"{RED}Opcao invalida. Digite 1, 2 ou 3.{RESET}")
 
+def ensure_port_permission(port):
+    if os.path.exists(port) and not os.access(port, os.W_OK):
+        print(f"\n{YELLOW}⚠️ Ajustando permissao da porta serial {port}...{RESET}")
+        try:
+            subprocess.run(["sudo", "chmod", "666", port])
+        except Exception:
+            pass
+
 def select_port(ports):
     if not ports:
         print(f"\n{RED}⚠ Nenhuma placa serial (/dev/ttyACM* ou /dev/ttyUSB*) foi detectada!{RESET}")
@@ -241,6 +249,7 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
     f_size = hw_config.get("flash_size", "4MB")
     f_freq = hw_config.get("flash_freq", "40m")
     
+    ensure_port_permission(port)
     if chip == "esp32c3":
         print(f"\n{YELLOW}{BOLD}┌─────────────────────────────────────────────────────────────┐{RESET}")
         print(f"{YELLOW}{BOLD}│ 📌 PROCEDIMENTO PARA ENTRAR EM MODO GRAVACAO (ESP32-C3):    │{RESET}")
