@@ -37,7 +37,7 @@ HARDWARE_CONFIGS = {
         "env": "t-display-s3",
         "chip": "esp32s3",
         "bootloader_offset": "0x0",
-        "flash_mode": "qio",
+        "flash_mode": "dio",
         "flash_size": "16MB",
         "flash_freq": "80m",
         "display": "ST7789 320x170 8-bit Parallel (Power PIN 15, BL 38)",
