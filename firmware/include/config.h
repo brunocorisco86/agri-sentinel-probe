@@ -6,7 +6,9 @@
 #define FIRMWARE_VERSION "1.0.0"
 
 // Determinação do modelo de hardware
-#if defined(ENV_TTGO_T_DISPLAY)
+#if defined(ENV_T_DISPLAY_S3)
+    #define HARDWARE_MODEL "LilyGO T-Display-S3 (ESP32-S3)"
+#elif defined(ENV_TTGO_T_DISPLAY)
     #define HARDWARE_MODEL "LilyGO T-Display (ESP32)"
 #elif defined(ENV_ESP32_C3_SUPERMINI)
     #define HARDWARE_MODEL "ESP32-C3 SuperMini"
@@ -16,7 +18,9 @@
 
 // Botão de reset de fábrica / Forçar modo AP
 #ifndef BTN_AP_TRIGGER
-    #if defined(ENV_TTGO_T_DISPLAY)
+    #if defined(ENV_T_DISPLAY_S3)
+        #define BTN_AP_TRIGGER 14
+    #elif defined(ENV_TTGO_T_DISPLAY)
         #define BTN_AP_TRIGGER 35
     #elif defined(ENV_ESP32_C3_SUPERMINI)
         #define BTN_AP_TRIGGER 9

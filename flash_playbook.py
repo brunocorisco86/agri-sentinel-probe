@@ -3,7 +3,10 @@
 
 """
 Keepalive Foresight - Playbook Interativo de Gravacao Flash & Comissionamento
-Suporte Dual-Hardware: LilyGO T-Display (ESP32) & ESP32-C3 SuperMini (RISC-V)
+Suporte Multi-Hardware com Auto-Detecção:
+  • LilyGO T-Display-S3 (ESP32-S3)
+  • LilyGO T-Display Clássico (ESP32)
+  • ESP32-C3 SuperMini (RISC-V)
 """
 
 import os
@@ -29,19 +32,32 @@ BUILD_DIR = FIRMWARE_DIR / ".pio" / "build"
 
 HARDWARE_CONFIGS = {
     "1": {
-        "name": "LilyGO T-Display (ESP32 Dual-Core)",
+        "name": "LilyGO T-Display-S3 (ESP32-S3 Dual-Core LX7)",
+        "env": "t-display-s3",
+        "chip": "esp32s3",
+        "bootloader_offset": "0x0",
+        "display": "ST7789 320x170 8-bit Parallel (Power PIN 15, BL 38)",
+        "buttons_guide": (
+            f"{BOLD}Instrucoes de Hardware & Botoes (LilyGO T-Display-S3):{RESET}\n"
+            f"  • {CYAN}Botao KEY / Lateral (GPIO 14):{RESET} Segure por 3 segundos para forcar o Modo Captive Portal (Wi-Fi de configuracao).\n"
+            f"  • {CYAN}Botao BOOT (GPIO 0):{RESET} Se o upload falhar, segure BOOT enquanto clica no botao RESET lateral para entrar em modo bootloader manual.\n"
+            f"  • {CYAN}Display ST7789 (320x170):{RESET} Apos a gravacao, o display acendera exibindo o HUD em alta resolucao com diagnostico em tempo real."
+        )
+    },
+    "2": {
+        "name": "LilyGO T-Display Classico (ESP32 D0WDQ6)",
         "env": "ttgo-t-display",
         "chip": "esp32",
         "bootloader_offset": "0x1000",
         "display": "ST7789 240x135 SPI DMA (Backlight GPIO 4)",
         "buttons_guide": (
-            f"{BOLD}Instrucoes de Hardware & Botoes (LilyGO T-Display):{RESET}\n"
-            f"  • {CYAN}Botao Superior (GPIO 35):{RESET} Segure por 3 segundos a qualquer momento para forcar o Modo Captive Portal (Wi-Fi de configuracao).\n"
-            f"  • {CYAN}Botao Inferior (GPIO 0 / Boot):{RESET} Se o upload falhar, segure este botao enquanto clica no botao RESET lateral para entrar em modo bootloader manual.\n"
-            f"  • {CYAN}Display ST7789:{RESET} Apos a gravacao, a tela acendera com o logo Keepalive Foresight e o status em tempo real."
+            f"{BOLD}Instrucoes de Hardware & Botoes (LilyGO T-Display Classico):{RESET}\n"
+            f"  • {CYAN}Botao Superior (GPIO 35):{RESET} Segure por 3 segundos para forcar o Modo Captive Portal.\n"
+            f"  • {CYAN}Botao Inferior (GPIO 0 / Boot):{RESET} Segure durante o reset se o upload falhar.\n"
+            f"  • {CYAN}Display ST7789 (240x135):{RESET} Exibe o HUD em tempo real."
         )
     },
-    "2": {
+    "3": {
         "name": "ESP32-C3 SuperMini (RISC-V Single-Core)",
         "env": "esp32-c3-supermini",
         "chip": "esp32c3",
@@ -49,7 +65,7 @@ HARDWARE_CONFIGS = {
         "display": "Sem Display (LED de Status Azul no GPIO 8)",
         "buttons_guide": (
             f"{BOLD}Instrucoes de Hardware & Botoes (ESP32-C3 SuperMini):{RESET}\n"
-            f"  • {CYAN}Botao BOOT (GPIO 9):{RESET} Segure por 3 segundos para abrir o Captive Portal. Se o upload falhar pelo USB-CDC nativo, segure BOOT ao plugar o cabo USB.\n"
+            f"  • {CYAN}Botao BOOT (GPIO 9):{RESET} Segure por 3 segundos para abrir o Captive Portal. Se o upload falhar, segure BOOT ao plugar o USB.\n"
             f"  • {CYAN}LED Azul de Diagnostico (GPIO 8):{RESET}\n"
             f"      - Piscando rapido: Modo Provisionamento SoftAP ativo\n"
             f"      - Piscando medio: Conectando a rede Wi-Fi\n"
@@ -116,18 +132,36 @@ def fix_port_permission(port):
         print(f"{RED}❌ Nao foi possivel liberar {port}. Tente executar: sudo chmod 666 {port}{RESET}")
         return False
 
-def select_hardware():
+def detect_chip_type(esptool_bin, port):
+    cmd = [esptool_bin, "-p", port, "chip-id"]
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        out = (res.stdout + res.stderr).lower()
+        if "esp32-s3" in out or "esp32s3" in out:
+            return "1" # T-Display-S3
+        elif "esp32-c3" in out or "esp32c3" in out:
+            return "3" # C3 SuperMini
+        elif "esp32" in out:
+            return "2" # ESP32 Classico
+    except Exception:
+        pass
+    return None
+
+def select_hardware(detected_key=None):
     print(f"{BOLD}Escolha a placa que voce deseja gravar:{RESET}")
-    print(f"  {CYAN}[1]{RESET} {BOLD}LilyGO T-Display{RESET} (ESP32 Dual-Core com Display ST7789)")
-    print(f"  {CYAN}[2]{RESET} {BOLD}ESP32-C3 SuperMini{RESET} (RISC-V compacto com LED azul GPIO 8)")
+    print(f"  {CYAN}[1]{RESET} {BOLD}LilyGO T-Display-S3{RESET} (ESP32-S3 Dual-Core LX7 - 320x170)")
+    print(f"  {CYAN}[2]{RESET} {BOLD}LilyGO T-Display Classico{RESET} (ESP32 D0WDQ6 - 240x135)")
+    print(f"  {CYAN}[3]{RESET} {BOLD}ESP32-C3 SuperMini{RESET} (RISC-V compacto com LED azul GPIO 8)")
+    
+    default_opt = detected_key if detected_key in HARDWARE_CONFIGS else "1"
     
     while True:
-        choice = input(f"\n{BOLD}Selecione a opcao [1 ou 2] (Padrao: 1): {RESET}").strip()
+        choice = input(f"\n{BOLD}Selecione a opcao [1-3] (Sugerido: {default_opt}): {RESET}").strip()
         if choice == "":
-            choice = "1"
+            choice = default_opt
         if choice in HARDWARE_CONFIGS:
             return HARDWARE_CONFIGS[choice]
-        print(f"{RED}Opcao invalida. Digite 1 ou 2.{RESET}")
+        print(f"{RED}Opcao invalida. Digite 1, 2 ou 3.{RESET}")
 
 def select_port(ports):
     if not ports:
@@ -193,12 +227,16 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
     
     if erase_first:
         print(f"\n{YELLOW}🧹 Executando apagamento completo da Flash (Erase Flash)...{RESET}")
-        erase_cmd = [esptool_bin, "-p", port, "-b", "460800", "--chip", chip, "erase_flash"]
+        erase_cmd = [esptool_bin, "-p", port, "-b", "460800", "--chip", chip, "erase-flash"]
         print(f"{DIM}Comando: {' '.join(erase_cmd)}{RESET}")
         res = subprocess.run(erase_cmd)
         if res.returncode != 0:
-            print(f"\n{RED}❌ Erro durante o erase_flash. Verifique a conexao do cabo.{RESET}")
-            return False
+            # Tenta fallback para erase_flash caso seja versao antiga
+            erase_cmd[-1] = "erase_flash"
+            res = subprocess.run(erase_cmd)
+            if res.returncode != 0:
+                print(f"\n{RED}❌ Erro durante o erase_flash. Verifique a conexao do cabo.{RESET}")
+                return False
             
     print(f"\n{CYAN}⚡ Gravando Firmware via esptool ({hw_config['name']})...{RESET}")
     flash_cmd = [
@@ -206,7 +244,7 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
         "-p", port,
         "-b", "460800",
         "--chip", chip,
-        "write_flash",
+        "write-flash",
         "--flash_mode", "dio",
         "--flash_size", "4MB",
         "--flash_freq", "40m",
@@ -217,6 +255,11 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
     
     print(f"{DIM}Comando: {' '.join(flash_cmd)}{RESET}\n")
     res = subprocess.run(flash_cmd)
+    
+    if res.returncode != 0:
+        # Fallback para write_flash com underscore
+        flash_cmd[6] = "write_flash"
+        res = subprocess.run(flash_cmd)
     
     if res.returncode == 0:
         print(f"\n{GREEN}{BOLD}🎉 GRAVACAO CONCLUIDA COM SUCESSO! 🎉{RESET}")
@@ -240,10 +283,7 @@ def open_serial_monitor(port):
 def main():
     print_banner()
     esptool_bin = find_esptool()
-    print(f"{DIM}Utilitario esptool: {esptool_bin}{RESET}\n")
-    
-    hw_config = select_hardware()
-    print(f"\n{GREEN}✓ Placa selecionada: {BOLD}{hw_config['name']}{RESET}")
+    print(f"{DIM}Utilitario esptool: {esptool_bin}{RESET}")
     
     ports = find_serial_ports()
     selected_port = select_port(ports)
@@ -252,6 +292,13 @@ def main():
         print(f"{RED}Impossivel prosseguir sem permissao de acesso a porta.{RESET}")
         sys.exit(1)
         
+    detected_chip = detect_chip_type(esptool_bin, selected_port)
+    if detected_chip:
+        print(f"{GREEN}✓ Chip detectado automaticamente na porta: {BOLD}{HARDWARE_CONFIGS[detected_chip]['name']}{RESET}\n")
+        
+    hw_config = select_hardware(detected_chip)
+    print(f"\n{GREEN}✓ Placa selecionada: {BOLD}{hw_config['name']}{RESET}")
+    
     print(f"\n" + "-"*63)
     print(hw_config["buttons_guide"])
     print("-"*63 + "\n")
@@ -263,9 +310,9 @@ def main():
     print(f"  {CYAN}[2]{RESET} {BOLD}Erase Flash + Gravacao Limpa{RESET} ({YELLOW}Recomendado{RESET} para primeiro uso)")
     print(f"  {CYAN}[3]{RESET} Apenas Abrir Monitor Serial")
     
-    choice = input(f"\n{BOLD}Escolha uma opcao [1-3] (Padrao: 1): {RESET}").strip()
+    choice = input(f"\n{BOLD}Escolha uma opcao [1-3] (Padrao: 2): {RESET}").strip()
     if choice == "":
-        choice = "1"
+        choice = "2"
         
     if choice == "3":
         open_serial_monitor(selected_port)
