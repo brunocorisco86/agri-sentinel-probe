@@ -5,7 +5,6 @@ from app.core.config import settings
 class Base(DeclarativeBase):
     pass
 
-# Criação da Engine Assíncrona (otimizada para SQLite WAL ou PostgreSQL)
 connect_args = {}
 if "sqlite" in settings.DATABASE_URL:
     connect_args = {"check_same_thread": False}
@@ -31,12 +30,17 @@ async def get_db():
             await session.close()
 
 async def init_db():
-    # Ativa modo WAL no SQLite para alta concorrência assíncrona
     if "sqlite" in settings.DATABASE_URL:
         async with engine.begin() as conn:
             await conn.exec_driver_sql("PRAGMA journal_mode=WAL;")
             await conn.exec_driver_sql("PRAGMA synchronous=NORMAL;")
             await conn.run_sync(Base.metadata.create_all)
+            
+            # Migração automática de colunas novas no SQLite
+            try:
+                await conn.exec_driver_sql("ALTER TABLE devices ADD COLUMN check_interval_seconds INTEGER DEFAULT 300;")
+            except Exception:
+                pass
     else:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
