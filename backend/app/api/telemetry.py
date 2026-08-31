@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,6 +10,7 @@ from app.models.device import Device
 from app.models.telemetry import Telemetry
 from app.models.incident import Incident
 from app.services.classifier import classify_device_state, STATE_ONLINE, STATE_LAN_FAILURE
+from app.services.telegram_bot import send_telegram_alert
 
 router = APIRouter(prefix="/telemetry", tags=["Telemetria"])
 
@@ -50,7 +52,6 @@ async def receive_telemetry(payload: TelemetryPayload, db: AsyncSession = Depend
         )
         db.add(device)
     else:
-        # Atualiza métricas
         device.location_name = payload.location_name
         device.hardware_model = payload.hardware_model
         device.firmware_version = payload.firmware_version
@@ -79,29 +80,54 @@ async def receive_telemetry(payload: TelemetryPayload, db: AsyncSession = Depend
     )
     db.add(telemetry)
     
-    # 4. Gestão de Incidentes (Auto-recovery ou abertura)
+    # 4. Gestão de Incidentes e Alertas Telegram
     if status_code == STATE_LAN_FAILURE:
         inc_q = select(Incident).where(
             and_(Incident.device_id == payload.device_id, Incident.status == "OPEN")
         )
         inc_res = await db.execute(inc_q)
         if not inc_res.scalars().first():
+            inc_desc = f"Gateway Dragino ({payload.local_target_ip}) inacessivel na rede local de '{payload.location_name}'."
             inc = Incident(
                 device_id=payload.device_id,
                 incident_type="GATEWAY_LAN_FAILURE",
                 status="OPEN",
-                description=f"Gateway Dragino ({payload.local_target_ip}) inacessivel na rede local de '{payload.location_name}'.",
+                description=inc_desc,
                 opened_at=now
             )
             db.add(inc)
+            
+            asyncio.create_task(send_telegram_alert(
+                event_type="GATEWAY_LAN_FAILURE",
+                location_name=payload.location_name,
+                device_id=payload.device_id,
+                description=inc_desc,
+                extra_info={
+                    "IP Alvo LAN": payload.local_target_ip or "N/A",
+                    "Status WAN": "Saudavel (200 OK)",
+                    "Sinal Wi-Fi": f"{payload.wifi_rssi_dbm} dBm"
+                }
+            ))
     elif status_code == STATE_ONLINE:
         inc_q = select(Incident).where(
             and_(Incident.device_id == payload.device_id, Incident.status == "OPEN")
         )
         inc_res = await db.execute(inc_q)
-        for inc in inc_res.scalars().all():
+        open_incidents = inc_res.scalars().all()
+        for inc in open_incidents:
             inc.status = "RESOLVED"
             inc.resolved_at = now
+            
+            asyncio.create_task(send_telegram_alert(
+                event_type="RECOVERY",
+                location_name=payload.location_name,
+                device_id=payload.device_id,
+                description=f"Incidente '{inc.incident_type}' finalizado. Sonda 100% operacional.",
+                extra_info={
+                    "Duracao Falha": f"{int((now - inc.opened_at).total_seconds())}s",
+                    "Status": "Normalizado"
+                }
+            ))
             
     await db.commit()
     
