@@ -141,3 +141,48 @@ Este documento registra cronologicamente todas as sessões de planejamento, arqu
 
 ### 🏁 Status do Projeto ao Final da Sessão 03
 - **Status:** **Fases 1, 2, 3 e 4 100% Concluídas e Homologadas em Produção!**
+
+---
+
+## 🗓️ Sessão 04 — 31/08/2026 (Auto-Discovery por MAC, Dashboard NOC, Relatórios PDF com Gráficos Temporais & Multi-Hardware)
+
+### 🎯 Objetivos da Sessão
+1. Implementar **Auto-Discovery por MAC Address** com política de 5 retries no boot e validação contínua de identidade do Gateway Dragino (tolerância a quedas de energia e trocas de IP no DHCP).
+2. Construir o **Painel Web Dashboard NOC em Tempo Real (`/dashboard`)** com Dark Mode, KPIs e auto-refresh de 5s.
+3. Desenvolver o motor de **Relatórios Executivos em PDF de 7 e 30 dias** com gráficos de séries temporais (`matplotlib`), cards de métricas e parecer técnico corporativo de engenharia (`gemini-3.6-flash`).
+4. Implementar seleção dinâmica de granjas para geração de relatórios via **Checkboxes na tabela** e botões de laudo individual.
+5. Criar botão e endpoint administrativo de **Reset do Banco de Dados** (`POST /api/v1/admin/reset-database` com senha `blurbang`) para zerar a base antes do início oficial de produção.
+6. Desenvolver e instalar a Skill especializada no **Hermes Agent** na VPS Hostinger (`/root/projetos/hermes-agent/config/skills/devops/keepalive-foresight/SKILL.md`).
+7. Homologar e compilar a suíte completa de firmwares para os 3 modelos de hardware (`LilyGO T-Display-S3`, `ESP32-C3 SuperMini` e `LilyGO T-Display Clássico`).
+
+### 🛠️ Decisões Técnicas Consolidadas
+- **Auto-Discovery Dinâmico por Rajada ARP (`lwip/etharp`):**
+  - O firmware dispara requisições ARP para toda a sub-rede `/24` e inspeciona a tabela ARP do LwIP para associar o MAC alvo ao IP dinâmico em segundos.
+  - No boot: 5 retries com 2s de espaçamento e reset do watchdog WDT.
+  - No ciclo de monitoramento: se o IP parar de responder ou se o MAC daquele IP mudar, a sonda descarta o IP antigo, varre a rede, localiza o novo IP do Dragino e salva no NVS (`storage.saveConfig`).
+- **Dashboard Web NOC (`/dashboard`):**
+  - Servido diretamente pela API FastAPI com Tailwind CSS, Favicon vetorizado SVG (`/static/favicon.svg`), cards de KPIs, tabela interativa com checkboxes e log de incidentes.
+- **Relatório PDF Executivo (1 Granja por Página):**
+  - Construído com `reportlab` e `matplotlib` para gráficos temporais de latência e sinal Wi-Fi.
+  - Parecer técnico emitido pelo modelo `gemini-3.6-flash` em tom 100% humano de Engenharia de Redes e IoT Rural da C.Vale, sem menções a IA ou modelos de linguagem.
+- **Hermes Agent Skill:**
+  - Capacita o agente de inteligência da VPS a consultar as APIs de telemetria e incidentes em tempo real e responder a perguntas do operador ("Como estão as granjas?", "Tem algum gateway offline?").
+- **Multi-Hardware 100% Compilado:**
+  - `LilyGO T-Display-S3` (ESP32-S3): Display ST7789 320x170 paralelo.
+  - `LilyGO T-Display Clássico` (ESP32): Display ST7789 240x135 SPI DMA.
+  - `ESP32-C3 SuperMini` (RISC-V): Modo Headless, LED de status no GPIO 8 e sequência de gravação BOOT no `flash_playbook.py`.
+
+### 📁 Artefatos Criados & Atualizados
+- [`backend/app/templates/dashboard.html`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/backend/app/templates/dashboard.html): Dashboard NOC com checkboxes e auto-sync.
+- [`backend/app/services/pdf_generator.py`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/backend/app/services/pdf_generator.py): Gerador de PDF corporativo de 1 página por granja.
+- [`backend/app/services/chart_generator.py`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/backend/app/services/chart_generator.py): Motor Matplotlib de séries temporais de latência e RSSI.
+- [`backend/app/services/gemini_ai.py`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/backend/app/services/gemini_ai.py): Parecer técnico de engenharia com integração à API Gemini Flash.
+- [`backend/app/api/admin.py`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/backend/app/api/admin.py): Endpoint de reset administrativo do banco com senha `blurbang`.
+- [`backend/app/api/reports.py`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/backend/app/api/reports.py): Endpoints de relatório PDF (`/pdf?days=7&device_ids=...`) e Telegram (`/daily-telegram`).
+- [`docs/hermes_skills/keepalive-foresight/SKILL.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/docs/hermes_skills/keepalive-foresight/SKILL.md): Skill para o Hermes Agent na VPS.
+- [`flash_playbook.py`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/flash_playbook.py): Playbook com auto-ajuste de permissões e passo a passo de bootloader do ESP32-C3.
+- Suíte de Testes Automatizados: 13/13 testes passando com 100% de sucesso no `pytest`.
+
+### 🏁 Status do Projeto ao Final da Sessão 04
+- **Produção na VPS Hostinger:** Ativa na porta `8016` com Dashboard, PDFs, Telegram e Hermes Skill operando.
+- **Hardware Embarcado:** 3 hardwares compilados e testados com Auto-Discovery e Ping ICMP nativo.
