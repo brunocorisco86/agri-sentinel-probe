@@ -1,0 +1,4 @@
+# Dependências de Desenvolvimento, Testes e Gravação
+-r requirements.txt
+pytest-cov>=4.1.0
+flake8>=7.0.0
