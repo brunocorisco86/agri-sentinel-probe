@@ -165,24 +165,26 @@ void DisplayHUD::updateHUD(const ProbeMetrics &metrics, const AppConfig &config)
     
     // 1. Barra Superior (Header de Status)
     uint16_t headerBg = metrics.cloud_online ? TFT_DARKGREEN : TFT_MAROON;
-    _tft->fillRect(0, 0, w, 22, headerBg);
+    int headerH = 26;
+    _tft->fillRect(0, 0, w, headerH, headerBg);
     
     _tft->setTextColor(TFT_WHITE, headerBg);
     _tft->setTextDatum(TL_DATUM);
-    _tft->drawString("Ponto: " + String(config.location_name), 6, 4, 2);
+    _tft->drawString(String(config.location_name), 8, 5, 2);
     
     _tft->setTextDatum(TR_DATUM);
     String headerRight = "";
     if (metrics.current_time_str.length() > 0) {
         headerRight += metrics.current_time_str + " | ";
     }
-    headerRight += "Up: " + formatUptime(metrics.uptime_sec) + " | " + String(metrics.wifi_rssi) + "dBm";
-    _tft->drawString(headerRight, w - 6, 4, 2);
+    headerRight += formatUptime(metrics.uptime_sec) + " | " + String(metrics.wifi_rssi) + "dBm";
+    _tft->drawString(headerRight, w - 8, 5, 2);
     
     // Dimensões dos blocos centrais
+    int footerH = 26;
+    int topY = 30;
     int blockW = (w - 18) / 2;
-    int blockH = h - 58;
-    int topY = 26;
+    int blockH = h - footerH - topY - 4;
     
     // 2. Bloco Central: Alvo Local (Gateway / Dragino)
     int leftX = 6;
@@ -236,7 +238,6 @@ void DisplayHUD::updateHUD(const ProbeMetrics &metrics, const AppConfig &config)
     }
     
     // 4. Rodapé Diagnóstico (Matriz Booleana de Estados)
-    int footerH = 26;
     int footerY = h - footerH;
     _tft->fillRect(0, footerY, w, footerH, TFT_NAVY);
     _tft->setTextDatum(MC_DATUM);
