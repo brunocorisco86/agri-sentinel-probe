@@ -8,7 +8,7 @@ services:
     ports:
       - "8016:8000"
     environment:
-      - DATABASE_URL=sqlite+aiosqlite:///app/data/keepalive.db
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/keepalive.db
       - API_SECRET_TOKEN=keepalive-secret-token-123
       - TELEGRAM_BOT_TOKEN=8907806195:AAHJWLT7iIlGfNS_xgUL9RWeXAb_Gx_m5Iw
       - TELEGRAM_CHAT_ID=1959691903
