@@ -60,6 +60,8 @@ void DisplayHUD::begin() {
         _tft->setRotation(1); // 240x135
     #endif
     _tft->fillScreen(TFT_BLACK);
+    _tft->setTextFont(1);
+    _tft->setTextSize(1);
     
     #if defined(TFT_BL)
         pinMode(TFT_BL, OUTPUT);
