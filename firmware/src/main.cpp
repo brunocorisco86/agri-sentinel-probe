@@ -252,23 +252,34 @@ void loop() {
         if (millis() - lastTelemetryMillis >= intervalMs) {
             lastTelemetryMillis = millis();
             
-            // 1. Probe LAN (Alvo Local com Suporte a Auto-Discovery por MAC)
+            // 1. Probe LAN (Alvo Local com Verificação Contínua de MAC e Auto-Reconexão)
             if ((strlen(appConfig.target_lan_ip) > 0 && strcmp(appConfig.target_lan_ip, "0.0.0.0") != 0) || strlen(appConfig.target_lan_mac) >= 11) {
                 probeMetrics.local_target_enabled = true;
                 float rtt = 0;
                 String mac = "";
                 bool online = false;
                 
+                // 1.1 Testa IP atualmente armazenado
                 if (strlen(appConfig.target_lan_ip) > 0 && strcmp(appConfig.target_lan_ip, "0.0.0.0") != 0) {
                     online = networkProbe.probeTarget(appConfig.target_lan_ip, appConfig.target_lan_port, rtt, mac);
+                    
+                    // Validação de Identidade: Se o IP respondeu, confere se o MAC ainda é do equipamento esperado
+                    if (online && strlen(appConfig.target_lan_mac) >= 11 && mac.length() >= 11 && mac != "PING-OK" && mac != "TCP-OK") {
+                        if (!mac.equalsIgnoreCase(appConfig.target_lan_mac)) {
+                            Serial.printf("[PROBE LAN] IP %s agora pertence a outro MAC (%s). MAC esperado: %s. Buscando novo IP...\n",
+                                          appConfig.target_lan_ip, mac.c_str(), appConfig.target_lan_mac);
+                            online = false; // Invalida IP para forçar re-discovery do alvo real
+                        }
+                    }
                 }
                 
-                // Se o IP falhou mas o MAC foi informado, executa Auto-Discovery dinâmico na rede
+                // 1.2 Se o enlace foi perdido ou o IP mudou, executa re-discovery automático do MAC na rede
                 if (!online && strlen(appConfig.target_lan_mac) >= 11) {
-                    String discoveredIP = networkProbe.discoverIPByMAC(appConfig.target_lan_mac);
+                    Serial.printf("[PROBE LAN] Enlace perdido no IP anterior. Varrendo rede para reencontrar MAC: %s ...\n", appConfig.target_lan_mac);
+                    String discoveredIP = networkProbe.discoverIPByMAC(appConfig.target_lan_mac, 2, 1000);
                     if (discoveredIP.length() > 0) {
                         strncpy(appConfig.target_lan_ip, discoveredIP.c_str(), sizeof(appConfig.target_lan_ip) - 1);
-                        storage.saveConfig(appConfig); // Persiste novo IP descoberto
+                        storage.saveConfig(appConfig); // Salva novo IP descoberto
                         online = networkProbe.probeTarget(appConfig.target_lan_ip, appConfig.target_lan_port, rtt, mac);
                     }
                 }
