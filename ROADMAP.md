@@ -67,28 +67,32 @@ gantt
 ---
 
 ## ☁️ Fase 2: Backend Cloud & Dead Man's Switch (FastAPI)
-> **Responsável Principal:** Subagente `backend-cloud-engineer`
+> **Responsável Principal:** Subagente `backend-architect`
 
-- [ ] **2.1 Infraestrutura & Modelagem de Dados:**
-  - Configurar `Dockerfile.backend` e `docker-compose.yml` (FastAPI + PostgreSQL 16 + Nginx).
-  - Criar migrações Alembic e modelos ORM (`Farm`, `Device`, `Telemetry`, `Incident`).
+- [x] **2.1 Infraestrutura & Modelagem de Dados:**
+  - Setup do projeto FastAPI com gerenciamento de dependências assíncronas.
+  - Modelagem ORM (`SQLAlchemy 2.0` assíncrono) para `Device` (sonda), `Telemetry` e `Incident`.
+  - Suporte out-of-the-box a SQLite em modo WAL (`aiosqlite`) e PostgreSQL (`asyncpg`).
+  - Schemas Pydantic V2 (`TelemetryPayload`, `DeviceResponse`, `IncidentResponse`).
 
-- [ ] **2.2 API REST de Telemetria:**
-  - Criar rota `POST /api/v1/telemetry` com validação Pydantic V2 e autenticação por Bearer Token.
-  - Criar rotas de consulta: `GET /api/v1/devices/{id}/status` e `GET /api/v1/incidents`.
-  - Healthcheck da aplicação (`GET /health`).
+- [x] **2.2 API REST de Telemetria:**
+  - `POST /api/v1/telemetry`: Endpoint de alta vazão para ingestão de telemetria da sonda com validação de Bearer Token.
+  - `GET /api/v1/devices`: Listagem e status consolidado de todas as sondas ativas em campo.
+  - `GET /api/v1/devices/summary`: Resumo em tempo real de contagem de sondas (online, falha LAN, timeout).
+  - `GET /api/v1/devices/{id}/status`: Detalhamento e métricas de conectividade de uma sonda específica.
+  - `GET /api/v1/incidents`: Histórico e incidentes em aberto com rastreamento temporal.
+  - `GET /health`: Healthcheck para monitoramento de infraestrutura e orquestradores.
 
-- [ ] **2.3 Motor Dead Man's Switch:**
-  - Implementar worker assíncrono rodando a cada 10 segundos para verificar `now() - last_seen_at`.
-  - Classificação lógica booleana dos 4 estados operacionais:
-    1. *Tudo Operacional*
-    2. *Falha Local do Gateway Dragino (WAN OK)*
-    3. *Queda de Link WAN (Timeout na VPS)*
-    4. *Queda Geral / Blecaute*
+- [x] **2.3 Motor Dead Man's Switch Assíncrono:**
+  - Worker assíncrono (`deadman_switch_worker`) em background executado via `asyncio.sleep(10)`.
+  - Monitoramento contínuo de `now() - last_seen_at > 30s` (3 falhas consecutivas de heartbeat).
+  - Classificação determinística da Matriz Booleana de 4 Estados (`ONLINE`, `LAN_FAILURE`, `WAN_TIMEOUT`, `BLACKOUT_GENERAL`).
+  - Auto-abertura e auto-resolução (auto-recovery) de incidentes na reativação da comunicação.
 
-- [ ] **2.4 Suíte de Testes Automatizados (pytest):**
-  - Implementar testes unitários para schemas Pydantic e regras de classificação.
-  - Validar timeouts do Dead Man's Switch em memória com `pytest-asyncio`.
+- [x] **2.4 Suíte de Testes Automatizados (`pytest` / `pytest-asyncio`):**
+  - Testes unitários para a Matriz de Classificação Booleana.
+  - Testes de integração para ingestão de telemetria, autenticação Bearer Token e geração de incidentes.
+  - 100% de testes passando com banco em memória (`sqlite+aiosqlite:///:memory:`).
 
 ---
 

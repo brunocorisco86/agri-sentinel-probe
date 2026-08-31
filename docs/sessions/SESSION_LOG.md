@@ -88,3 +88,33 @@ Este documento registra cronologicamente todas as sessões de planejamento, arqu
   2. Implementação e testes unitários do Backend FastAPI (Fase 2).
 
 
+
+---
+
+## 📅 Sessão 03 — 31/08/2026
+
+### 🎯 Objetivos da Sessão
+1. Resolver o bootloop e o pânico de memória (`LoadProhibited`) no hardware **LilyGO T-Display-S3 (ESP32-S3)**.
+2. Validar o fluxo de provisionamento SoftAP / Captive Portal no dispositivo físico e conexão Wi-Fi real.
+3. Desenvolver e homologar a **Fase 2 (Backend Cloud FastAPI & Dead Man's Switch)**.
+
+### 🛠️ Ações Executadas
+1. **Correção de Boot & Display no ESP32-S3:**
+   - Identificada a necessidade de gravar `boot_app0.bin` no offset `0xe000` após erase flash.
+   - Ajustado modo de gravação para `DIO` (80MHz / 16MB).
+   - Eliminado uso do `TFT_eSprite` no display ST7789 paralelo de 8 bits, adotando renderização direta via `TFT_eSPI` sem consumo excessivo de heap.
+   - Habilitação de energia via GPIO 15 (`PIN_POWER_ON`).
+2. **Homologação Edge em Campo:**
+   - A placa conectou à rede Wi-Fi local do usuário com sucesso.
+   - Inicializado o ciclo de telemetria HTTP assíncrono a cada 10 segundos.
+3. **Desenvolvimento Completo da Fase 2 (Backend FastAPI Cloud):**
+   - Implementado ORM assíncrono SQLAlchemy com suporte a SQLite WAL (`aiosqlite`) e PostgreSQL (`asyncpg`).
+   - Criados modelos `Device`, `Telemetry` e `Incident`.
+   - Implementados endpoints `POST /api/v1/telemetry`, `GET /api/v1/devices`, `GET /api/v1/devices/summary`, `GET /api/v1/incidents` e `GET /health`.
+   - Implementado worker assíncrono `deadman_switch_worker` com verificação de timeouts a cada 10s e auto-recovery de incidentes.
+   - Desenvolvida suíte automatizada `pytest` com 8 testes cobrindo matriz booleana, ingestão, autenticação e criação de incidentes (100% aprovada).
+   - Criado launcher `run_backend.py`.
+
+### 📊 Resultados Alcançados
+- **Fase 1 (Edge Firmware & Provisionamento):** 100% Concluída e homologada no hardware real.
+- **Fase 2 (Backend Cloud & Dead Man's Switch):** 100% Concluída e testada.
