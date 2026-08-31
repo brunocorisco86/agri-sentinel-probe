@@ -74,13 +74,15 @@ HARDWARE_CONFIGS = {
         "flash_freq": "40m",
         "display": "Sem Display (LED de Status Azul no GPIO 8)",
         "buttons_guide": (
-            f"{BOLD}Instrucoes de Hardware & Botoes (ESP32-C3 SuperMini):{RESET}\n"
-            f"  • {CYAN}Botao BOOT (GPIO 9):{RESET} Segure por 3 segundos para abrir o Captive Portal. Se o upload falhar, segure BOOT ao plugar o USB.\n"
-            f"  • {CYAN}LED Azul de Diagnostico (GPIO 8):{RESET}\n"
-            f"      - Piscando rapido: Modo Provisionamento SoftAP ativo\n"
-            f"      - Piscando medio: Conectando a rede Wi-Fi\n"
-            f"      - Pulso curto (Heartbeat): Sistema 100% online e operando normalmente\n"
-            f"      - Flash duplo: Falha de conexao ou erro de comunicacao"
+            f"{BOLD}Instrucoes de Hardware & Gravacao Flash (ESP32-C3 SuperMini):{RESET}\n"
+            f"  • {YELLOW}{BOLD}Como Colocar em Modo Download / Bootloader para Gravar:{RESET}\n"
+            f"      1. Mantenha pressionado o botao {CYAN}BOOT (GPIO 9){RESET}.\n"
+            f"      2. De um clique rapido no botao {CYAN}RESET (RST){RESET}.\n"
+            f"      3. Solte o botao {CYAN}BOOT{RESET}.\n"
+            f"      (Ou conecte o cabo USB no computador mantendo o botao BOOT pressionado).\n"
+            f"  • {CYAN}Apos a Gravacao (Operacao Normal):{RESET}\n"
+            f"      - Segure {CYAN}BOOT por 3 segundos{RESET} para abrir o Captive Portal Wi-Fi.\n"
+            f"      - {CYAN}LED Azul (GPIO 8):{RESET} Pisca rapido no provisionamento, pulso no envio e flash duplo se houver erro."
         )
     }
 }
@@ -238,6 +240,18 @@ def flash_chip(esptool_bin, port, hw_config, bins, erase_first=False):
     f_mode = hw_config.get("flash_mode", "dio")
     f_size = hw_config.get("flash_size", "4MB")
     f_freq = hw_config.get("flash_freq", "40m")
+    
+    if chip == "esp32c3":
+        print(f"\n{YELLOW}{BOLD}┌─────────────────────────────────────────────────────────────┐{RESET}")
+        print(f"{YELLOW}{BOLD}│ 📌 PROCEDIMENTO PARA ENTRAR EM MODO GRAVACAO (ESP32-C3):    │{RESET}")
+        print(f"{YELLOW}{BOLD}│                                                             │{RESET}")
+        print(f"{YELLOW}{BOLD}│ 1. Mantenha pressionado o botao BOOT (GPIO 9).              │{RESET}")
+        print(f"{YELLOW}{BOLD}│ 2. De um clique rapido no botao RESET (RST).                │{RESET}")
+        print(f"{YELLOW}{BOLD}│ 3. Solte o botao BOOT.                                      │{RESET}")
+        print(f"{YELLOW}{BOLD}│                                                             │{RESET}")
+        print(f"{YELLOW}{BOLD}│ (Ou: segure o botao BOOT enquanto pluga o cabo USB no PC)   │{RESET}")
+        print(f"{YELLOW}{BOLD}└─────────────────────────────────────────────────────────────┘{RESET}\n")
+        input(f"{CYAN}Pressione [ENTER] quando o ESP32-C3 estiver em modo Bootloader para gravar...{RESET}")
     
     if erase_first:
         print(f"\n{YELLOW}🧹 Executando apagamento completo da Flash (Erase Flash)...{RESET}")
