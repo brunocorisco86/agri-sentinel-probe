@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # Google Gemini Flash API (Relatórios Executivos)
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "blurbang")
     
     model_config = SettingsConfigDict(
         env_file=".env",

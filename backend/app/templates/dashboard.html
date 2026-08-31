@@ -74,8 +74,13 @@
                     <span>📑 PDF (30 Dias)</span>
                 </a>
 
-                <button onclick="triggerTelegramReport()" class="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 transition text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-sky-600/20">
-                    <span>📢 Disparar Telegram</span>
+                <button onclick="triggerTelegramReport()" class="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 transition text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-sky-600/20">
+                    <span>📢 Telegram</span>
+                </button>
+
+                <!-- Botão Administrador para Zerar Banco -->
+                <button onclick="adminResetDatabase()" class="flex items-center space-x-1.5 bg-rose-600 hover:bg-rose-500 transition text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-rose-600/20" title="Ação de Administrador: Apagar todos os dados para início de produção">
+                    <span>🗑️ Zerar Banco (Admin)</span>
                 </button>
             </div>
         </div>
@@ -321,6 +326,29 @@
                 alert(data.message || 'Relatório disparado no Telegram com sucesso!');
             } catch (err) {
                 alert('Erro ao disparar relatório: ' + err);
+            }
+        }
+
+        async function adminResetDatabase() {
+            const pass = prompt("⚠️ ATENÇÃO: Esta ação apagará todas as telemetrias, incidentes e dispositivos para iniciar a produção do zero.\n\nDigite a senha de Administrador para confirmar:");
+            if (!pass) return;
+
+            try {
+                const res = await fetch('/api/v1/admin/reset-database', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_password: pass })
+                });
+                
+                const data = await res.json();
+                if (res.ok) {
+                    alert("✓ " + data.message);
+                    fetchDashboardData();
+                } else {
+                    alert("✕ Erro: " + (data.detail || "Senha incorreta"));
+                }
+            } catch (err) {
+                alert("✕ Falha na requisição: " + err);
             }
         }
 

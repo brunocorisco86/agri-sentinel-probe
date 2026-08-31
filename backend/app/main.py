@@ -11,6 +11,7 @@ from app.api.telemetry import router as telemetry_router
 from app.api.devices import router as devices_router
 from app.api.incidents import router as incidents_router
 from app.api.reports import router as reports_router
+from app.api.admin import router as admin_router
 from app.services.deadman_switch import deadman_switch_worker
 
 @asynccontextmanager
@@ -54,6 +55,7 @@ app.include_router(telemetry_router, prefix=settings.API_V1_STR)
 app.include_router(devices_router, prefix=settings.API_V1_STR)
 app.include_router(incidents_router, prefix=settings.API_V1_STR)
 app.include_router(reports_router, prefix=settings.API_V1_STR)
+app.include_router(admin_router, prefix=settings.API_V1_STR)
 
 TEMPLATE_PATH = Path(__file__).parent / "templates" / "dashboard.html"
 
