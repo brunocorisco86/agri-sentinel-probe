@@ -1,0 +1,23 @@
+services:
+  keepalive-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: keepalive-api
+    restart: unless-stopped
+    ports:
+      - "8016:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///app/data/keepalive.db
+      - API_SECRET_TOKEN=keepalive-secret-token-123
+      - TELEGRAM_BOT_TOKEN=8907806195:AAHJWLT7iIlGfNS_xgUL9RWeXAb_Gx_m5Iw
+      - TELEGRAM_CHAT_ID=1959691903
+      - DEADMAN_INTERVAL_SECONDS=10
+      - DEADMAN_TIMEOUT_SECONDS=30
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
