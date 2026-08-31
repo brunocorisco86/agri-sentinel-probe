@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keepalive Foresight - Painel NOC Sondas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        },
+                        dark: {
+                            bg: '#090d16',
+                            card: '#111827',
+                            border: '#1f2937',
+                            hover: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.95); }
+        }
+        .live-dot {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-slate-100 min-h-screen font-sans antialiased flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-dark-border bg-dark-card/80 backdrop-blur sticky top-0 z-30 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 font-black text-xl text-white">
+                    ⚡
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        KEEPALIVE FORESIGHT
+                        <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">NOC v1.0</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Monitoramento Ativo de Sondas WAN/LAN e Gateways Dragino</p>
+                </div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 bg-dark-bg border border-dark-border px-3 py-1.5 rounded-lg text-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 live-dot"></span>
+                    <span class="text-slate-300 font-mono" id="last-sync-time">Sincronizando...</span>
+                </div>
+                <button onclick="triggerTelegramReport()" class="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 transition text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-sky-600/20">
+                    <span>📢 Disparar Relatório Telegram</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-8">
+
+        <!-- KPI Metrics Grid -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Total Sondas -->
+            <div class="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total de Pontos</p>
+                        <h3 class="text-3xl font-extrabold text-white mt-1" id="kpi-total">0</h3>
+                    </div>
+                    <span class="p-2.5 rounded-xl bg-slate-800 text-slate-300 text-lg">📡</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-3 flex items-center gap-1.5">
+                    <span class="text-emerald-400 font-medium">100% dos nós</span> registrados
+                </p>
+            </div>
+
+            <!-- Sondas Online -->
+            <div class="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">100% Operacionais</p>
+                        <h3 class="text-3xl font-extrabold text-emerald-400 mt-1" id="kpi-online">0</h3>
+                    </div>
+                    <span class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-lg">🟢</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">Link WAN e Gateway Dragino saudáveis</p>
+            </div>
+
+            <!-- Falhas de Gateway LAN -->
+            <div class="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Falhas Dragino (LAN)</p>
+                        <h3 class="text-3xl font-extrabold text-amber-400 mt-1" id="kpi-lan-fail">0</h3>
+                    </div>
+                    <span class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 text-lg">⚠️</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">WAN ativa, mas alvo local sem resposta</p>
+            </div>
+
+            <!-- Quedas de Provedor WAN -->
+            <div class="bg-dark-card border border-dark-border rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quedas de Link WAN</p>
+                        <h3 class="text-3xl font-extrabold text-rose-500 mt-1" id="kpi-wan-timeout">0</h3>
+                    </div>
+                    <span class="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 text-lg">🚨</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-3">Sem batimento de telemetria (Timeout)</p>
+            </div>
+        </section>
+
+        <!-- Sondas Table Section -->
+        <section class="bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-sm">
+            <div class="px-6 py-4 border-b border-dark-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-base font-bold text-white">Sondas em Campo & Diagnóstico em Tempo Real</h2>
+                    <p class="text-xs text-slate-400">Varredura automática e classificação temporal a cada 5 segundos</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="filter-input" onkeyup="filterTable()" placeholder="Filtrar granja, IP ou MAC..." class="bg-dark-bg border border-dark-border text-xs rounded-lg px-3 py-2 text-white placeholder-slate-500 outline-none focus:border-emerald-500 w-64">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-900/60 uppercase text-slate-400 font-semibold border-b border-dark-border">
+                        <tr>
+                            <th class="px-6 py-3.5">Status Geral</th>
+                            <th class="px-6 py-3.5">Ponto / Granja</th>
+                            <th class="px-6 py-3.5">Hardware / Versão</th>
+                            <th class="px-6 py-3.5">Alvo LAN (Gateway)</th>
+                            <th class="px-6 py-3.5">Latência</th>
+                            <th class="px-6 py-3.5">Sinal Wi-Fi</th>
+                            <th class="px-6 py-3.5">Uptime</th>
+                            <th class="px-6 py-3.5">Último Batimento</th>
+                        </tr>
+                    </thead>
+                    <tbody id="devices-table-body" class="divide-y divide-dark-border font-medium">
+                        <tr>
+                            <td colspan="8" class="text-center py-8 text-slate-500">Carregando dados das sondas...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Incidents Log Section -->
+        <section class="bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-sm">
+            <div class="px-6 py-4 border-b border-dark-border">
+                <h2 class="text-base font-bold text-white">Histórico Recente de Incidentes & Auto-Recovery</h2>
+                <p class="text-xs text-slate-400">Rastreamento de aberturas e resoluções automáticas</p>
+            </div>
+            <div class="p-6">
+                <div id="incidents-container" class="space-y-3">
+                    <p class="text-xs text-slate-500">Nenhum incidente registrado até o momento.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-dark-border bg-dark-card px-6 py-4 text-center text-xs text-slate-500">
+        Keepalive Foresight • Plataforma de Monitoramento e Confiabilidade de Conectividade Rural C.Vale
+    </footer>
+
+    <!-- Frontend Logic -->
+    <script>
+        async function fetchDashboardData() {
+            try {
+                const res = await fetch('/api/v1/devices/summary');
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // Update KPIs
+                document.getElementById('kpi-total').innerText = data.total_devices;
+                document.getElementById('kpi-online').innerText = data.online_count;
+                document.getElementById('kpi-lan-fail').innerText = data.lan_failure_count;
+                document.getElementById('kpi-wan-timeout').innerText = data.wan_timeout_count;
+
+                // Update Devices Table
+                const tbody = document.getElementById('devices-table-body');
+                if (data.devices.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">Nenhuma sonda cadastrada no momento.</td></tr>';
+                } else {
+                    tbody.innerHTML = data.devices.map(d => {
+                        let statusBadge = '';
+                        if (d.status === 'ONLINE') {
+                            statusBadge = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 100% OPERACIONAL</span>';
+                        } else if (d.status === 'LAN_FAILURE') {
+                            statusBadge = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> FALHA GATEWAY LAN</span>';
+                        } else {
+                            statusBadge = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20"><span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> QUEDA DE LINK WAN</span>';
+                        }
+
+                        let wifiRssi = d.wifi_rssi_dbm ? `${d.wifi_rssi_dbm} dBm (${d.wifi_ssid || 'N/A'})` : 'N/A';
+                        let lanTarget = d.local_target_enabled 
+                            ? `<span class="text-slate-200 font-mono">${d.local_target_ip}</span><br><span class="text-[10px] text-slate-500 font-mono">${d.local_target_mac || 'Auto-Discovery'}</span>`
+                            : '<span class="text-slate-500 italic">Modo WAN-Only</span>';
+
+                        let lanRtt = d.local_target_enabled 
+                            ? (d.local_target_online ? `<span class="text-emerald-400 font-bold">${d.local_target_rtt_ms.toFixed(1)} ms</span>` : '<span class="text-rose-400 font-bold">OFFLINE</span>')
+                            : '<span class="text-slate-500">-</span>';
+
+                        return `
+                            <tr class="hover:bg-dark-hover transition">
+                                <td class="px-6 py-4 whitespace-nowrap">${statusBadge}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-bold text-white text-sm">${d.location_name}</div>
+                                    <div class="text-[11px] text-slate-400 font-mono">${d.device_id} • ${d.device_mac}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-slate-300 font-medium">${d.hardware_model}</div>
+                                    <div class="text-[11px] text-slate-500">v${d.firmware_version} • Int: ${Math.round((d.check_interval_seconds || 300)/60)}m</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">${lanTarget}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">${lanRtt}</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono text-slate-300">${wifiRssi}</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono text-emerald-400">${d.uptime_formatted || d.uptime_seconds + 's'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-slate-400">${formatDate(d.last_seen_at)}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Update Incidents
+                fetchIncidents();
+
+                const now = new Date();
+                document.getElementById('last-sync-time').innerText = 'Sync: ' + now.toLocaleTimeString('pt-BR');
+            } catch (err) {
+                console.error('Erro ao buscar dados:', err);
+            }
+        }
+
+        async function fetchIncidents() {
+            try {
+                const res = await fetch('/api/v1/incidents');
+                if (!res.ok) return;
+                const incidents = await res.json();
+                const container = document.getElementById('incidents-container');
+                if (incidents.length === 0) {
+                    container.innerHTML = '<p class="text-xs text-slate-500">Nenhum incidente registrado. Todos os enlaces estão operando perfeitamente.</p>';
+                    return;
+                }
+                container.innerHTML = incidents.slice(0, 5).map(inc => {
+                    const isOpen = inc.status === 'OPEN';
+                    const badge = isOpen 
+                        ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">ABERTO</span>'
+                        : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">RESOLVIDO</span>';
+                    
+                    return `
+                        <div class="flex items-start justify-between p-3.5 rounded-xl bg-dark-bg border border-dark-border text-xs">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-white">${inc.incident_type}</span>
+                                    ${badge}
+                                    <span class="text-slate-500 font-mono text-[11px]">${inc.device_id}</span>
+                                </div>
+                                <p class="text-slate-300">${inc.description}</p>
+                            </div>
+                            <div class="text-right text-[11px] text-slate-500 whitespace-nowrap">
+                                <div>Aberto: ${formatDate(inc.opened_at)}</div>
+                                ${inc.resolved_at ? `<div class="text-emerald-400">Resolvido: ${formatDate(inc.resolved_at)}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function formatDate(isoStr) {
+            if (!isoStr) return '-';
+            const d = new Date(isoStr + 'Z');
+            return d.toLocaleTimeString('pt-BR') + ' ' + d.toLocaleDateString('pt-BR');
+        }
+
+        function filterTable() {
+            const query = document.getElementById('filter-input').value.toLowerCase();
+            const rows = document.querySelectorAll('#devices-table-body tr');
+            rows.forEach(r => {
+                const text = r.innerText.toLowerCase();
+                r.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        async function triggerTelegramReport() {
+            try {
+                const res = await fetch('/api/v1/reports/daily-telegram', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message || 'Relatório disparado no Telegram com sucesso!');
+            } catch (err) {
+                alert('Erro ao disparar relatório: ' + err);
+            }
+        }
+
+        // Fetch on load & poll every 5s
+        fetchDashboardData();
+        setInterval(fetchDashboardData, 5000);
+    </script>
+</body>
+</html>
