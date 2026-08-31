@@ -50,8 +50,41 @@ Este documento registra cronologicamente todas as sessões de planejamento, arqu
 
 ### 🏁 Status do Projeto ao Final da Sessão 01
 - **Status:** Planejamento, Arquitetura, Playbooks e Infraestrutura 100% concluídos e auditados.
-- **Próxima Sessão (Sessão 02):**
-  1. Conexão do repositório remoto no GitHub (`git remote add origin ...`).
-  2. Inicialização do desenvolvimento do firmware ESP32 (Fase 1) e/ou backend FastAPI (Fase 2) na máquina local com testes automatizados (`pytest`).
+
+---
+
+## 🗓️ Sessão 02 — 31/08/2026 (Implementação do Firmware Multi-Ponto & Dual-Hardware)
+
+### 🎯 Objetivos da Sessão
+1. Expandir a arquitetura para suporte a **múltiplos pontos de verificação** (Casa, Granja, Escritório, etc.) e **múltiplos hardwares** (LilyGO T-Display ESP32 e ESP32-C3 SuperMini).
+2. Codificação completa de todos os módulos C++ do firmware em [`firmware/include/`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/include) e [`firmware/src/`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/src).
+3. Instalação e configuração do `esptool` e `platformio` no ambiente local de desenvolvimento.
+4. Compilação e geração dos binários de flash para ambos os targets (`ttgo-t-display` e `esp32-c3-supermini`).
+5. Atualização dos playbooks de flash com comandos diretos do `esptool`.
+
+### 🛠️ Decisões Técnicas Consolidadas
+- **Multi-Ponto (WAN-Only vs LAN Gateway):**
+  - Configuração de `location_name` amigável via Captive Portal.
+  - Caso o campo `target_lan_ip` seja preenchido (ex: `192.168.1.50`), a sonda executa varredura ARP + TCP probe no gateway. Se deixado em branco, a sonda opera em modo **WAN-Only** (ideal para monitorar a conexão residencial ou outros pontos de teste).
+- **Dual-Hardware Abstraction:**
+  - `LilyGO T-Display (ESP32)`: HUD gráfico 240x135 em `TFT_eSprite` 8-bit double buffer, display ST7789, backlight GPIO 4, trigger AP no GPIO 35.
+  - `ESP32-C3 SuperMini (RISC-V)`: Footprint ultra-compacto, USB CDC nativo, controle visual por LED de status azul no GPIO 8 (piscamento codificado por estado) e trigger AP no GPIO 9.
+- **Armazenamento NVS (`Preferences.h`):** Persistência segura e não volátil de Wi-Fi, Nome do Ponto, IP Alvo, Cloud URL, Token e Intervalo de envio.
+
+### 📁 Artefatos Criados & Atualizados
+- [`firmware/include/config.h`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/include/config.h): Definições de hardware, estados e estruturas `AppConfig` e `ProbeMetrics`.
+- [`firmware/include/storage_manager.h`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/include/storage_manager.h) / [`.cpp`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/src/storage_manager.cpp): Gerenciamento da NVS.
+- [`firmware/include/display_hud.h`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/include/display_hud.h) / [`.cpp`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/src/display_hud.cpp): Renderização gráfica para ST7789 e controle de LED para ESP32-C3.
+- [`firmware/include/captive_portal.h`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/include/captive_portal.h) / [`.cpp`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/src/captive_portal.cpp): Portal Web responsivo Dark UI com scan Wi-Fi dinâmico e suporte a Captive Portal em iOS/Android/Windows.
+- [`firmware/include/network_probe.h`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/include/network_probe.h) / [`.cpp`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/src/network_probe.cpp): Engine de probe ARP (`etharp_request`) e TCP socket RTT.
+- [`firmware/include/cloud_client.h`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/include/cloud_client.h) / [`.cpp`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/src/cloud_client.cpp): Cliente HTTP REST com payload JSON de telemetria.
+- [`firmware/src/main.cpp`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/firmware/src/main.cpp): Loop principal com watchdog WDT de 30s e máquina de estados.
+- [`docs/playbooks/firmware_flash_playbook.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/docs/playbooks/firmware_flash_playbook.md): Playbook atualizado com suporte dual e comandos `esptool`.
+
+### 🏁 Status Atual
+- **Fase 1 (Edge Firmware):** 100% implementada e compilada com sucesso para `ttgo-t-display` e `esp32-c3-supermini`.
+- **Próximos Passos:**
+  1. Realização do upload/flash para as placas conectadas.
+  2. Implementação e testes unitários do Backend FastAPI (Fase 2).
 
 

@@ -35,33 +35,34 @@ gantt
 
 ---
 
-## 📦 Fase 1: Edge Firmware & Provisionamento Web (ESP32 / LilyGO)
+## 📦 Fase 1: Edge Firmware & Provisionamento Web (LilyGO T-Display & ESP32-C3)
 > **Responsável Principal:** Subagente `firmware-engineer`
 
-- [ ] **1.1 Estrutura PlatformIO & Configuração de Hardware:**
-  - Configurar `platformio.ini` com build flags para ST7789 via SPI DMA.
-  - Mapear pinout (`TFT_MOSI:19`, `TFT_SCLK:18`, `TFT_CS:5`, `TFT_DC:16`, `TFT_RST:23`, `TFT_BL:4`).
-  - Implementar Hardware Watchdog Timer (`esp_task_wdt`) de 30s.
+- [x] **1.1 Estrutura PlatformIO & Configuração Dual-Hardware:**
+  - Configurar `platformio.ini` para `ttgo-t-display` (ST7789 via SPI DMA) e `esp32-c3-supermini` (RISC-V + LED status GPIO 8).
+  - Implementar Hardware Watchdog Timer (`esp_task_wdt`) de 30s e detecção de botão físico de reset/AP.
 
-- [ ] **1.2 HUD Visual Local (`TFT_eSprite`):**
-  - Desenvolver renderizador gráfico em memória (240x135) sem flicker.
+- [x] **1.2 HUD Visual Local (`TFT_eSprite`) & LED C3:**
+  - Renderizador gráfico em memória (240x135) sem flicker com paleta 8-bit.
   - Exibir barra superior com status Wi-Fi (dBm), Uptime e nuvem.
-  - Exibir bloco central: IP/MAC do Dragino, RTT local em ms e status [ONLINE / OFFLINE].
+  - Exibir bloco central: Nome do Ponto (`location_name`), IP/MAC local, RTT em ms e status [ONLINE / OFFLINE].
+  - Padrões de piscar codificados por estado para placas sem display (ESP32-C3 SuperMini).
 
-- [ ] **1.3 Servidor Web Embarcado & Captive Portal:**
-  - Criar modo SoftAP (`Keepalive-Probe-XXXX`) e Servidor DNS na porta 53 para redirecionamento.
-  - Interface Web HTML5/CSS3 responsiva (scan de redes Wi-Fi, senha, IP do Dragino, token VPS).
+- [x] **1.3 Servidor Web Embarcado & Captive Portal:**
+  - Modo SoftAP (`Keepalive-SENTINEL-XXXX`) e Servidor DNS na porta 53 para redirecionamento.
+  - Interface Web HTML5/CSS3 responsiva Dark Mode (scan de redes Wi-Fi, senha, nome do ponto, IP do Dragino/roteador, token VPS).
   - Persistência e leitura das configurações via Flash (`Preferences.h` / NVS).
-  - Gatilho por botão físico (pressionar IO35 por 5 segundos para forçar modo AP).
+  - Gatilho por botão físico (pressionar por 3 segundos para forçar modo AP).
 
-- [ ] **1.4 Sonda de Rede Local (Probe Engine):**
+- [x] **1.4 Sonda de Rede Local (Probe Engine) & Cliente REST:**
   - Implementar varredura ARP ativa e passiva usando `etharp_find_addr` (lwIP).
-  - Implementar teste de abertura de socket TCP rápido (porta 80/22) para verificar integridade do Dragino.
-  - Medição do RTT local em milissegundos.
+  - Suporte a modo **WAN-Only** (residencial / pontos de verificação sem gateway local).
+  - Teste de abertura de socket TCP rápido para verificar integridade e RTT do alvo local.
+  - Cliente HTTP REST assíncrono para envio de telemetria JSON para a VPS.
 
-- [ ] **1.5 Validação de Gravação Flash:**
-  - Seguir o [⚡ Playbook de Gravação do Firmware](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/docs/playbooks/firmware_flash_playbook.md).
-  - Validar sequência de boot no monitor serial (115200 baud) e acendimento do ST7789.
+- [x] **1.5 Compilação e Playbook de Gravação Flash:**
+  - Compilação 100% bem-sucedida para ambos os targets (`ttgo-t-display` e `esp32-c3-supermini`).
+  - Playbook completo com comandos diretos do `esptool` e PlatformIO ([⚡ `docs/playbooks/firmware_flash_playbook.md`](file:///home/brunoconter/Documentos/1_C.VALE/2%20-%20PROJETOS/16_Keepalive_Foresight/docs/playbooks/firmware_flash_playbook.md)).
 
 ---
 
